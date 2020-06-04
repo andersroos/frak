@@ -1,0 +1,11 @@
+
+Trying to convert my own program from 1989 to work in vice, the actual
+program is below. Some testing first.
+
+https://dustlayer.com/vic-ii/2013/4/22/when-visibility-matters
+
+Trying to switch graphics mem area and clear screen.
+
+10 poke 56576,peek(56576) and 252 rem set graphics mem 2
+20 for a=32768 to 32768+7999 : poke a,0 : next a
+
