@@ -1,11 +1,193 @@
 
-Trying to convert my own program from 1989 to work in vice, the actual
-program is below. Some testing first.
+Trying to convert my own program from 1989? to work in vice, doing
+minor improvements, but still c64 basic. The actual program is
+below. Some testing first.
 
 https://dustlayer.com/vic-ii/2013/4/22/when-visibility-matters
+https://sta.c64.org/cbm64mem.html
 
 Trying to switch graphics mem area and clear screen.
 
 10 poke 56576,peek(56576) and 252 rem set graphics mem 2
 20 for a=32768 to 32768+7999 : poke a,0 : next a
 
+From the book page 123
+
+5 b=2*4096: poke 53272,peek(53272) or 8 : rem bit map at 8192
+10 poke 53265,peek(53265) or 32 : rem bit map mode
+20 for i=1024 to 2023:poke i,3: next: rem set color to cyan and black
+30 for i=b to b+7999: poke i,0: next: rem clear screen
+50 for x=0 to 319 step 0.5
+60 y=int(90+80*sin(x/10))
+70 ch=int(x/8)
+80 ro=int(y/8)
+85 ln=y and 7
+90 by=b+ro*320+8*ch+ln
+100 bi=7-(x and 7)
+110 poke by, peek(by) or (2 ^ bi)  : rem needs fixing
+120 next x
+125 poke 1024,16
+130 goto 130
+
+From the book page 127 (multi color bitmap mode)
+
+poke 53265,peek(53265) or 32: poke 53270, peek(53270) or 16 : rem turn on multi color mode
+
+5 b=2*4096: poke 53272,peek(53272) or 8 : rem bit map at 8192
+10 poke 53265,peek(53265) or 32 : rem bit map mode
+20 for c=0 to 1000: poke 1024+c,114 : poke 55296+c,5: next c
+30 for i=b to b+7999: poke i,0: next: rem clear screen
+
+Painting the screen:
+
+10  rem setup
+20  poke 53265,peek(53265) or 32 : rem multi col mode
+30  poke 53270,peek(53270) or 16 : rem multi col mode
+40  poke 53272,peek(53272) or 8 : rem gfx mem from 8192
+50  base = 8192
+60  poke 53281,0 : rem background color
+70  for c=0 to 1000 : poke 1024+c,114 : poke 55296+c,5 : next c : rem other cols
+80  for a=base to base+7999 : poke a,0 : next a : rem clear screen
+100 for y=0 to 199 : for x=0 to 159
+110 byte=base+int(y/8)*320+int(x/4)*8+(y and 7)
+120 col = (y + 1) and 3
+130 xm = (x and 3) * 2
+140 mask = col * 2 ^ (6 - xm): rem high bit is first
+150 poke byte,peek(byte) or mask
+200 next x : next y
+210 goto 210
+
+The fractal painting program:
+
+10  rem setup
+20  poke 53265,peek(53265) or 32 : rem multi col mode
+30  poke 53270,peek(53270) or 16 : rem multi col mode
+40  poke 53272,peek(53272) or 8  : rem gfx mem from 8192
+50  base = 8192
+60  poke 53281,0 : rem background color
+70  for c=0 to 1000 : poke 1024+c,114 : poke 55296+c,5 : next c : rem other cols
+80  for a=base to base+7999 : poke a,0 : next a : rem clear screen
+
+100 rem calculate
+101 mx = 159 : my = 199 : mi = 4
+102 al = -2 : ar = 2 : bl = -2 : bu = 2
+103 dx = (ar-al)/mx : dy=(bu-bl)/my
+105 for y=0 to my : for x=0 to mx:
+106 gosub 500
+107 gosub 600
+110 next x : next y
+
+200 goto 200 : rem wait forever
+    
+500 rem calulate col for pixel
+501 xa=0 : ya=0 : n=0
+502 r = al + x*dx : i = bl + y*dy
+510 if (xa*xa+ya*ya)>=4 or n>=mi then goto 520
+511 xn=xa*xa-ya*ya+r : yn=2*xa*ya+i
+512 xa=xn : ya=yn : n=n+1
+513 goto 510
+520 if n=>mi then n=0
+521 f = n and 3
+522 return
+
+600 rem write pixel x, y, f (col 0-3)
+601 byte = base+int(y/8)*320+int(x/4)*8+(y and 7)
+602 on (1 + (x and 3)) goto 610,611,612,613
+610 mask = 64 * f: goto 620
+611 mask = 16 * f: goto 620
+612 mask =  4 * f: goto 620
+613 mask =      f: goto 620
+620 poke byte,peek(byte) or mask
+621 return
+
+
+
+
+
+
+
+
+
+Orginal program with comments:
+10 FOR a=8192 TO 16191                 # clear graphics mem
+20 POKE a,0                            
+30 NEXT a                              
+40 POKE 53265,PEEK(53265) OR 32        # multi color mode
+50 POKE 53270,PEEK(53270) OR 16        # multi color mode
+60 POKE 53272,PEEK(53272) OR 8         # använd grafikminne från 8192
+70 POKE 53281,0                        # sätt färg (color 0)
+80 FOR c=0 TO 1000
+90 POKE 1024+c,114 : POKE 55296+c,5    # sätt färger, char (color 1 och 2) från 1024,  color ram från 55296 (4 bits, color 3)
+100 NEXT c
+1000 q=0
+1010 GOSUB 10000
+1020 al=2-(4*RND(1))
+1030 ar=2-(4*RND(1))
+1040 bl=2-(4*RND(1))
+1050 bu=2-(4*RND(1))
+1060 r=2-(4*RND(1))
+1070 i=2-(4*RND(1))
+1080 mx=10
+1090 my=20
+1100 GOSUB 30000
+1110 PRINT"{clear}"
+1120 END
+10000 mi=3
+10010 mx=10
+10020 my=20
+10030 mc=4
+15000 x=xr
+15010 y=yr
+15020 n=0
+15030 IF (x*x+y*y)<4.0 AND n<mi THEN    GOSUB 20000
+15040 it=n
+15050 RETURN
+20000 xn=x*x-y*y+r
+20010 yn=2*x*y+i
+20020 x=xn
+20030 y=yn
+20040 n=n+1
+20050 RETURN
+30000 REM fraktal subrutin
+30010 xd=(ar-al)/mx
+30020 yd=(bu-bl)/my
+30030 FOR y=1 TO my
+30040 FOR x=1 TO mx
+30050 xr=al+x*xd
+30060 yr=bl+y*yd
+30070 GOSUB 15000
+30080 f=INT(n)
+30090 GOSUB 60000
+30100 NEXT x
+30110 NEXT y
+30120 RETURN
+60000 byte=8192+INT(y/8)*320+INT(x/4)*8+(y AND 7) # func: write pixel in x,y pos in color f(0-3)
+60010 IF f<>0 THEN 60110
+60020 h=(x-((INT(x/4))*4))
+60030 IF h=0 THEN mask=0
+60040 IF h=1 THEN mask=0
+60050 IF h=2 THEN mask=0
+60060 IF h=3 THEN mask=0
+60070 POKE byte,PEEK(byte) OR mask
+60110 IF f<>1 THEN 60210
+60120 h=(x-((INT(x/4))*4))
+60130 IF h=0 THEN mask=64
+60140 IF h=1 THEN mask=16
+60150 IF h=2 THEN mask=4
+60160 IF h=3 THEN mask=1
+60170 POKE byte,PEEK(byte) OR mask
+60210 IF f<>2 THEN 60310
+60220 h=(x-((INT(x/4))*4))
+60230 IF h=0 THEN mask=128
+60240 IF h=1 THEN mask=32
+60250 IF h=2 THEN mask=8
+60260 IF h=3 THEN mask=2
+60270 POKE byte,PEEK(byte) OR mask
+60310 IF f<>3 THEN 60410
+60320 h=(x-((INT(x/4))*4))
+60330 IF h=0 THEN mask=192
+60340 IF h=1 THEN mask=48
+60350 IF h=2 THEN mask=12
+60360 IF h=3 THEN mask=3
+60370 POKE byte,PEEK(byte) OR mask
+60410 RETURN
