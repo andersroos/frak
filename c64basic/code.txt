@@ -1,5 +1,5 @@
 
-Trying to convert my own program from 1989? to work in vice, doing
+Trying to convert my own program from 1987? 1988? 1989? to work in vice, doing
 minor improvements, but still c64 basic. The actual program is
 below. Some testing first.
 
@@ -75,8 +75,8 @@ The fractal painting program:
 23  next a
 
 100 rem calculate
-101 mx = 159 : my = 199 : mi = 16
-102 al = -2 : ar = 2 : bl = -2 : bu = 2
+101 mx = 159 : my = 199 : mi = 32
+102 al = -2 : ar = 1 : bl = -1.5 : bu = 1.5
 103 dx = (ar-al)/mx : dy=(bu-bl)/my
 105 for y=0 to my : for x=0 to mx:
 106   gosub 500
