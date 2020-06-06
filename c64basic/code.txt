@@ -60,21 +60,27 @@ Painting the screen:
 The fractal painting program:
 
 10  rem setup
-20  poke 53265,peek(53265) or 32 : rem multi col mode
-30  poke 53270,peek(53270) or 16 : rem multi col mode
-40  poke 53272,peek(53272) or 8  : rem gfx mem from 8192
-50  base = 8192
-60  poke 53281,0 : rem background color
-70  for c=0 to 1000 : poke 1024+c,114 : poke 55296+c,5 : next c : rem other cols
-80  for a=base to base+7999 : poke a,0 : next a : rem clear screen
+11  print chr$(147)"
+12  poke 53265,peek(53265) or 32 : rem multi col mode
+13  poke 53270,peek(53270) or 16 : rem multi col mode
+14  poke 53272,peek(53272) or 8  : rem gfx mem from 8192
+15  base = 8192
+16  poke 53281,0 : rem background color
+17  for c=0 to 1000 : rem other cols
+18    poke 1024+c,114
+19    poke 55296+c,5
+20  next c 
+21  for a=base to base+7999  : rem clear screen
+22    poke a,0
+23  next a
 
 100 rem calculate
 101 mx = 159 : my = 199 : mi = 4
 102 al = -2 : ar = 2 : bl = -2 : bu = 2
 103 dx = (ar-al)/mx : dy=(bu-bl)/my
 105 for y=0 to my : for x=0 to mx:
-106 gosub 500
-107 gosub 600
+106   gosub 500
+107   gosub 600
 110 next x : next y
 
 200 goto 200 : rem wait forever
@@ -83,9 +89,9 @@ The fractal painting program:
 501 xa=0 : ya=0 : n=0
 502 r = al + x*dx : i = bl + y*dy
 510 if (xa*xa+ya*ya)>=4 or n>=mi then goto 520
-511 xn=xa*xa-ya*ya+r : yn=2*xa*ya+i
-512 xa=xn : ya=yn : n=n+1
-513 goto 510
+511   xn=xa*xa-ya*ya+r : yn=2*xa*ya+i
+512   xa=xn : ya=yn : n=n+1
+513   goto 510
 520 if n=>mi then n=0
 521 f = n and 3
 522 return
@@ -93,22 +99,15 @@ The fractal painting program:
 600 rem write pixel x, y, f (col 0-3)
 601 byte = base+int(y/8)*320+int(x/4)*8+(y and 7)
 602 on (1 + (x and 3)) goto 610,611,612,613
-610 mask = 64 * f: goto 620
-611 mask = 16 * f: goto 620
-612 mask =  4 * f: goto 620
-613 mask =      f: goto 620
+610   mask = 64 * f: goto 620
+611   mask = 16 * f: goto 620
+612   mask =  4 * f: goto 620
+613   mask =      f: goto 620
 620 poke byte,peek(byte) or mask
 621 return
 
-
-
-
-
-
-
-
-
 Orginal program with comments:
+
 10 FOR a=8192 TO 16191                 # clear graphics mem
 20 POKE a,0                            
 30 NEXT a                              
