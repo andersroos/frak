@@ -75,7 +75,7 @@ The fractal painting program:
 23  next a
 
 100 rem calculate
-101 mx = 159 : my = 199 : mi = 4
+101 mx = 159 : my = 199 : mi = 16
 102 al = -2 : ar = 2 : bl = -2 : bu = 2
 103 dx = (ar-al)/mx : dy=(bu-bl)/my
 105 for y=0 to my : for x=0 to mx:
@@ -88,11 +88,11 @@ The fractal painting program:
 500 rem calulate col for pixel
 501 xa=0 : ya=0 : n=0
 502 r = al + x*dx : i = bl + y*dy
-510 if (xa*xa+ya*ya)>=4 or n>=mi then goto 520
+510 if (xa*xa+ya*ya) >= 4 or n > =mi then goto 520
 511   xn=xa*xa-ya*ya+r : yn=2*xa*ya+i
 512   xa=xn : ya=yn : n=n+1
 513   goto 510
-520 if n=>mi then n=0
+520 if n => mi then n=0
 521 f = n and 3
 522 return
 
