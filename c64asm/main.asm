@@ -8,9 +8,6 @@
                 [name="FRAK", type="prg", segments="Code"]
         }
 
-        .label gfx = $2000
-        .label gfx_hi = $20
-        .label gfx_lo = $00
         .label gfx_ref = $fb
         .label gfx_ref_lo = $fb
         .label gfx_ref_hi = $fc
@@ -64,9 +61,9 @@ start:  // clear screen
         bne !loop-
 
         // clear gfx mem $2000 - $3fff ($c0 too far)
-        ldx gfx_lo
+        ldx #$00    // gfx lo
         stx gfx_ref_lo
-        ldx gfx_hi
+        ldx #$20    // gfx hi
         stx gfx_ref_hi
         lda #$00   // value
 !hi:    ldy #$00   // index
@@ -81,13 +78,31 @@ start:  // clear screen
         jsr debug_set_top_left
         jsr debug_set_bot_right
 
-        lda #100
-        sta x
-        sta y
-        lda #1
-        sta col
-        jsr plot
 
+        // debug print
+        lda #$41   // gul svart svart gul
+        sta $3ae2  // 80 - 83 x 170
+        sta $3c24  // 80 - 83 x 180
+        sta $3d66  // 80 - 83 x 190
+
+        lda #2     // röd
+        sta col
+
+        lda #72
+        sta x
+
+        lda #170
+        sta y
+        jsr plot  // 0x3ad3
+
+        lda #180
+        sta y
+        jsr plot  // 0x3c14
+
+        lda #190
+        sta y
+        jsr plot  // 0x3d56
+        
         // wait forever
 wait:   jmp wait
 
@@ -95,23 +110,53 @@ wait:   jmp wait
 //
 // set pixel in x,y to col
 //
-plot:  
-        // byte = base + y & $f0 * 40 + x & ^$03 * 8 + y & 7
+plot:
+        // byte = base + y & $f8 * 40 + x & 0xfc * 2 + y & 7
         // mask = (col & 3) >> (x & 3)
-        // hi byte = $20 + hi((y & $f0) * 0b00101000)
-        //         = $20 + (y & $f0) >> 5 + (y & $f0) >> 3
+
+        // hi byte = $20 + hi((y & $f8) * 0b00101000) + x & 0x80 >> 7
+        //         = $20 + (y & $f8) >> (8 - 5) + (y & $f8) >> (8 - 3) + x & 0x80 >> 7
         //         => $fc
-        lda y
-        and #$f0
+        lda y              // start with y & $f8
+        and #$f8
+        lsr                // first shift 3
         lsr
         lsr
+        sta gfx_ref_hi     // save
+        lsr                // shift another 2
         lsr
+        adc gfx_ref_hi
+        sta gfx_ref_hi     // add and save
+        lda #$20           // add $20
+        adc gfx_ref_hi
+        sta gfx_ref_hi
+        lda x              // x & $80
+        and #$80
+        rol                // x >> 7 => rol
+        adc gfx_ref_hi     // add and save
         sta gfx_ref_hi
         
-        // lo byte = lo((y & $f0) * 0b00101000) + (x & $fc) >> 1 + y & 7
-        //         = (y & $10) << 3 + x & $fc >> 1 + y & 7
+        // lo byte = lo((y & $f8) * 0b00101000) + (x & $fc) << 1 + y & 7
+        //         = (y & $f8) << 3 + (y & $f8) << 5 + (x & $fc) << 1 + y & 7
         //         => $fb
-        lda #$00
+        lda y             // y & $f8 
+        and #$f8
+        asl               // shift 3
+        asl
+        asl
+        sta gfx_ref_lo    // save
+        asl               // shift another 2
+        asl
+        adc gfx_ref_lo    // add save
+        sta gfx_ref_lo    
+        lda x             // x & $fc
+        and #$fc
+        asl               // << 1
+        adc gfx_ref_lo    // add and save
+        sta gfx_ref_lo    
+        lda y             // y & $07
+        and #$07
+        adc gfx_ref_lo    // add and save
         sta gfx_ref_lo
         
         // mask = (col & 3) >> (x & 3)
