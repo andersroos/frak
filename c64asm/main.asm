@@ -88,20 +88,20 @@ start:  // clear screen
         lda #2     // röd
         sta col
 
-        lda #72
+        lda #76
         sta x
 
         lda #170
         sta y
-        jsr plot  // 0x3ad3
+        jsr plot  // 0x3ada
 
         lda #180
         sta y
-        jsr plot  // 0x3c14
+        jsr plot  // 0x3c1c
 
         lda #190
         sta y
-        jsr plot  // 0x3d56
+        jsr plot  // 0x3d5e
         
         // wait forever
 wait:   jmp wait
@@ -147,20 +147,23 @@ plot:
         sta gfx_ref_lo    // save
         asl               // shift another 2
         asl
+        clc
         adc gfx_ref_lo    // add save
-        sta gfx_ref_lo    
+        sta gfx_ref_lo
         lda x             // x & $fc
         and #$fc
         asl               // << 1
+        clc
         adc gfx_ref_lo    // add and save
         sta gfx_ref_lo    
         lda y             // y & $07
         and #$07
+        clc
         adc gfx_ref_lo    // add and save
         sta gfx_ref_lo
         
         // mask = (col & 3) >> (x & 3)
-        lda #$ff
+        lda #$fe
         ldy #$00
         sta (gfx_ref),y
         
