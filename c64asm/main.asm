@@ -8,10 +8,23 @@
                 [name="FRAK", type="prg", segments="Code"]
         }
 
+        //
+        // Locations
+        //
+        
         .label gfx_ref = $fb
         .label gfx_ref_lo = $fb
         .label gfx_ref_hi = $fc
         .label tmp = $02
+
+        //
+        // Variables
+        //
+        
+        *=$900 "Vars"
+x:      nop
+y:      nop
+col:    nop  
         
         //
         // The Code
@@ -76,53 +89,29 @@ start:  // clear screen
         cpx #$40
         bne !hi-
 
-        jsr debug_set_top_left
-        jsr debug_set_bot_right
+//        jsr debug_set_top_left
+//        jsr debug_set_bot_right
 
-
-        // debug print
-//        lda #$41   // gul svart svart gul
-//        sta $3ae2  // 80 - 83 x 170
-//        sta $3c24  // 80 - 83 x 180
-//        sta $3d66  // 80 - 83 x 190
-
-        lda #1     // röd
+        // draw line
+        lda #1
         sta col
 
-        lda #76
-        sta x
-
-        lda #170
+        lda #0
         sta y
-        jsr plot  // 0x3ada
-
-        lda #180
-        sta y
-        jsr plot  // 0x3c1c
-
-        lda #190
-        sta y
-        jsr plot  // 0x3d5e
-
-        lda #170
-        sta y
-
-        lda #76
+loopy:
+        lda #0
         sta x
-        jsr plot 
+loopx:
+        jsr plot
+        inc x
+        lda x
+        cmp #160
+        bne loopx
 
-//        lda #77
-//        sta x
-//        jsr plot 
+        inc y
+        cmp #200
+        bne loopy
 
-        lda #78
-        sta x
-        jsr plot 
-
-        lda #79
-        sta x
-        jsr plot 
-        
         // wait forever
 wait:   jmp wait
 
@@ -145,6 +134,7 @@ plot:
         sta gfx_ref_hi     // save
         lsr                // shift another 2
         lsr
+        clc
         adc gfx_ref_hi
         sta gfx_ref_hi     // add and save
         lda #$20           // add $20
@@ -156,8 +146,8 @@ plot:
         adc gfx_ref_hi     // add and save
         sta gfx_ref_hi
         
-        // lo byte = lo((y & $f8) * 0b00101000) + (x & $fc) << 1 + y & 7
-        //         = (y & $f8) << 3 + (y & $f8) << 5 + (x & $fc) << 1 + y & 7
+        // lo byte = lo((y & $f8) * 0b00101000) + (x & $7c) << 1 + y & 7
+        //         = (y & $f8) << 3 + (y & $f8) << 5 + (x & $7c) << 1 + y & 7
         //         => $fb
         lda y             // y & $f8 
         and #$f8
@@ -168,25 +158,26 @@ plot:
         asl               // shift another 2
         asl
         clc
-        adc gfx_ref_lo    // add save
+        adc gfx_ref_lo    // add and save (overflow is handled by hi multiplication)
         sta gfx_ref_lo
-        lda x             // x & $fc
+        lda x             // x & $7c
         and #$fc
         asl               // << 1
         clc
-        adc gfx_ref_lo    // add and save
-        sta gfx_ref_lo    
+        adc gfx_ref_lo    // add
+        bcc !cc+          // check overflow
+        inc gfx_ref_hi    // add overflow to hi
+!cc:    sta gfx_ref_lo    // save
         lda y             // y & $07
-        and #$07
+        and #$7
         clc
-        adc gfx_ref_lo    // add and save
-        sta gfx_ref_lo
-        
-        // mask = (col & 3) << (x & 3 * 2)
+        adc gfx_ref_lo    // add and save (does not overflow in practice)
+!cc:    sta gfx_ref_lo
+
+        // mask = (col & 3) << (3 - x & 3) * 2
         lda x
         and #3
-        sta tmp
-        ldx tmp
+        tax     // a -> x
         lda col
         and #3
 !loop:  cpx #3
@@ -228,8 +219,4 @@ debug_set_bot_right:
         lda #$ff
         sta $3f3f
         rts
-        
-x:      nop
-y:      nop
-col:    nop  
         
