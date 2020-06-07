@@ -57,7 +57,7 @@ Painting the screen:
 200 next x : next y
 210 goto 210
 
-The fractal painting program:
+The actual fractal program:
 
 10  rem setup
 11  print chr$(147)"
