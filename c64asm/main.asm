@@ -5,7 +5,7 @@
         
         // Write out to a d64 disk after compiling.
         .disk [name="DISK", filename="frak.d64"] {
-                [name="FRAK", type="prg", segments="Code"]
+                [name="FRAK", type="prg", segments="Code,Vars"]
         }
 
         //
@@ -27,9 +27,9 @@
         .segment Vars []
         *=$900 "Vars"
         
-x:              nop
-y:              nop
-col:            nop
+x:              .byte 0
+y:              .byte 0
+col:            .byte 0
 
 fx:             .byte 5,0
 fy:             .fill 5,0
@@ -115,13 +115,6 @@ start: // clear screen
         lda #>start_fx_str
         sta y
 
-        ldy #0
-!loop:         
-        lda (start_fy_str),y
-        sta (col),y
-        iny
-        cmp #5
-        bne !loop-
         jmp *
         
         // Loop over screen and fractal coordinates, hardcoded zoom.
