@@ -16,15 +16,35 @@
         .label gfx_ref_lo = $fb
         .label gfx_ref_hi = $fc
         .label tmp = $02
-
+        .label str_to_fac = $b7b5
+        .label str_to_fac_arg_lo = $22
+        .label str_to_fac_arg_hi = $23
+        
         //
         // Variables
         //
-        
+
+        .segment Vars []
         *=$900 "Vars"
-x:      nop
-y:      nop
-col:    nop  
+        
+x:              nop
+y:              nop
+col:            nop
+
+fx:             .byte 5,0
+fy:             .fill 5,0
+
+start_fx_str:   .text "-2.0000"
+start_fx:       .fill 5,0
+
+delta_fx_str:   .text "0.01875"
+delta_fx:       .fill 5,0
+        
+start_fy_str:   .text "-1.5000"
+start_fy:       .fill 5,0
+        
+delta_fy_str:   .text "0.01500"
+delta_fy:       .fill 5,0
         
         //
         // The Code
@@ -35,7 +55,7 @@ col:    nop
         
         *=$1000 "Code"
         
-start:  // clear screen
+start: // clear screen
         jsr $e544 
         
         // multi color mode
@@ -89,13 +109,22 @@ start:  // clear screen
         cpx #$40
         bne !hi-
 
-//        jsr debug_set_top_left
-//        jsr debug_set_bot_right
+        // Set up fx_start, fx_delta, fy_start, fy_delta.
+        lda #<start_fx_str
+        sta x
+        lda #>start_fx_str
+        sta y
 
-        // draw line
-        lda #1
-        sta col
-
+        ldy #0
+!loop:         
+        lda (start_fy_str),y
+        sta (col),y
+        iny
+        cmp #5
+        bne !loop-
+        jmp *
+        
+        // Loop over screen and fractal coordinates, hardcoded zoom.
         lda #0
         sta y
 loopy:
