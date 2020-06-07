@@ -11,6 +11,7 @@
         .label gfx_ref = $fb
         .label gfx_ref_lo = $fb
         .label gfx_ref_hi = $fc
+        .label tmp = $02
         
         //
         // The Code
@@ -80,12 +81,12 @@ start:  // clear screen
 
 
         // debug print
-        lda #$41   // gul svart svart gul
-        sta $3ae2  // 80 - 83 x 170
-        sta $3c24  // 80 - 83 x 180
-        sta $3d66  // 80 - 83 x 190
+//        lda #$41   // gul svart svart gul
+//        sta $3ae2  // 80 - 83 x 170
+//        sta $3c24  // 80 - 83 x 180
+//        sta $3d66  // 80 - 83 x 190
 
-        lda #2     // röd
+        lda #1     // röd
         sta col
 
         lda #76
@@ -102,6 +103,25 @@ start:  // clear screen
         lda #190
         sta y
         jsr plot  // 0x3d5e
+
+        lda #170
+        sta y
+
+        lda #76
+        sta x
+        jsr plot 
+
+//        lda #77
+//        sta x
+//        jsr plot 
+
+        lda #78
+        sta x
+        jsr plot 
+
+        lda #79
+        sta x
+        jsr plot 
         
         // wait forever
 wait:   jmp wait
@@ -112,7 +132,7 @@ wait:   jmp wait
 //
 plot:
         // byte = base + y & $f8 * 40 + x & 0xfc * 2 + y & 7
-        // mask = (col & 3) >> (x & 3)
+        // mask = (col & 3) >> (3 - (x & 3)) * 2
 
         // hi byte = $20 + hi((y & $f8) * 0b00101000) + x & 0x80 >> 7
         //         = $20 + (y & $f8) >> (8 - 5) + (y & $f8) >> (8 - 3) + x & 0x80 >> 7
@@ -162,11 +182,23 @@ plot:
         adc gfx_ref_lo    // add and save
         sta gfx_ref_lo
         
-        // mask = (col & 3) >> (x & 3)
-        lda #$fe
+        // mask = (col & 3) << (x & 3 * 2)
+        lda x
+        and #3
+        sta tmp
+        ldx tmp
+        lda col
+        and #3
+!loop:  cpx #3
+        beq !break+
+        asl
+        asl
+        inx
+        jmp !loop-
+!break:
         ldy #$00
+        ora (gfx_ref),y
         sta (gfx_ref),y
-        
         rts
         
 //
