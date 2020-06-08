@@ -1,27 +1,60 @@
 
         //
-        // Compile using www.theweb.dk/KickAssembler
+        // compile using www.theweb.dk/KickAssembler
+        //
+        // http://www.theweb.dk/KickAssembler/KickAssembler.pdf
+        // https://sta.c64.org/cbm64mem.html
+        // https://www.c64-wiki.com/wiki/Memory_(BASIC)
+        // https://www.c64-wiki.com/wiki/Zeropage
+        // https://www.masswerk.at/6502/6502_instruction_set.html#ASL
+        // https://www.c64-wiki.com/wiki/Floating_point_arithmetic
+        // https://vice-emu.sourceforge.io/vice_12.html
+        // http://www.c64os.com/post/floatingpointmath
+        //
+        // most of this info is also in the books
         //
         
-        // Write out to a d64 disk after compiling.
+        // write out to a d64 disk after compiling
         .disk [name="DISK", filename="frak.d64"] {
                 [name="FRAK", type="prg", segments="Code,Vars"]
         }
 
         //
-        // Locations
+        // macros
+        //
+
+        .macro parse_float_str_len7_to_mem(str, mem) {
+            // parse str string to floating point in fac
+            lda #>str
+            sta str_to_fac_arg_hi
+            lda #<str
+            sta str_to_fac_arg_lo
+            lda #7 // str len
+            jsr str_to_fac
+            
+            // move fac to mem
+            ldy #>mem
+            ldx #<mem
+            jsr fac_to_mem
+        }       
+        
+        //
+        // locations
         //
         
         .label gfx_ref = $fb
         .label gfx_ref_lo = $fb
         .label gfx_ref_hi = $fc
         .label tmp = $02
-        .label str_to_fac = $b7b5
+        .label str_to_fac = $b7b5       // str in str_to_fac_arg_hi/lo
         .label str_to_fac_arg_lo = $22
         .label str_to_fac_arg_hi = $23
+        .label fac_to_mem = $bbd4       // mem in y/x
+        .label fac = $61
+        .label arg = $69
         
         //
-        // Variables
+        // variables
         //
 
         .segment Vars []
@@ -47,15 +80,20 @@ delta_fy_str:   .text "0.01500"
 delta_fy:       .fill 5,0
         
         //
-        // The Code
+        // the code
         //
         
         .segment Code []
-        BasicUpstart2(start) // Creates a basic sys line that can starts the program.
+        BasicUpstart2(start) // creates a basic sys line that can starts the program
         
         *=$1000 "Code"
         
-start: // clear screen
+start:
+        //
+        // configure and clear screen
+        //
+
+        // clear screen
         jsr $e544 
         
         // multi color mode
@@ -109,15 +147,21 @@ start: // clear screen
         cpx #$40
         bne !hi-
 
-        // Set up fx_start, fx_delta, fy_start, fy_delta.
-        lda #<start_fx_str
-        sta x
-        lda #>start_fx_str
-        sta y
+        //
+        // prepare floating point data
+        //
+        
+        parse_float_str_len7_to_mem(start_fx_str, start_fx)
+        parse_float_str_len7_to_mem(delta_fx_str, delta_fx)
+        parse_float_str_len7_to_mem(start_fy_str, start_fy)
+        parse_float_str_len7_to_mem(delta_fy_str, delta_fy)
 
         jmp *
+
+        //
+        // loop over screen and fractal coordinates, hardcoded zoom (se above)
+        //
         
-        // Loop over screen and fractal coordinates, hardcoded zoom.
         lda #0
         sta y
 loopy:
