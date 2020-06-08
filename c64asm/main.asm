@@ -19,6 +19,8 @@
                 [name="FRAK", type="prg", segments="Code,Vars"]
         }
 
+        .encoding "petscii_upper"
+        
         //
         // macros
         //
@@ -87,6 +89,24 @@
             jsr cmp_fac_mem
         }
 
+        .macro format_fac(to, prefix) {
+            jsr format_fac
+            .var i = 0
+            .for (;i < prefix.size(); i++) {
+                lda #prefix.charAt(i)
+                sta to + i
+            }
+            
+            ldx #0
+!loop:
+            lda $100,x
+            sta to + i,x
+            inx
+            cpx #8
+            bne !loop-
+            lda fac
+        }
+        
         //
         // locations
         //
@@ -105,6 +125,7 @@
         .label mul_fac_arg = $ba2b      // fac = fac * arg (exp in a)
         .label sub_arg_fac = $b853      // fac = arg - fac (exp in a)
         .label cmp_fac_mem = $bc5b      // cmp fac, y/a
+        .label format_fac = $bddd       // output to $100
         .label fac = $61
         .label arg = $69
         
@@ -119,35 +140,35 @@
         
 x:              .byte 0
 y:              .byte 0
-col:            .byte 0
+col:            .fill 6,0
 
-xf:             .byte 5,0
-yf:             .fill 5,0
+xf:             .fill 8,0
+yf:             .fill 8,0
 
-float_2:        .fill 5,0
-float_2_str:    .text "2.00000"
+float_2:        .fill 8,0
+float_2_str:    .text "2.000000"
 
-float_4:        .fill 5,0
-float_4_str:    .text "4.00000"
+float_4:        .fill 8,0
+float_4_str:    .text "4.000000"
         
-start_xf_str:   .text "-2.0000"
-start_xf:       .fill 5,0
+start_xf_str:   .text "-2.00000"
+start_xf:       .fill 8,0
 
-delta_xf_str:   .text "0.01875"
-delta_xf:       .fill 5,0
+delta_xf_str:   .text "0.018750"
+delta_xf:       .fill 8,0
         
-start_yf_str:   .text "-1.5000"
-start_yf:       .fill 5,0
+start_yf_str:   .text "-1.50000"
+start_yf:       .fill 8,0
         
-delta_yf_str:   .text "0.01500"
-delta_yf:       .fill 5,0
+delta_yf_str:   .text "0.015000"
+delta_yf:       .fill 8,0
 
-xa:             .byte 5,0
-ya:             .byte 5,0
-xa2:            .byte 5,0
-ya2:            .byte 5,0
-xn:             .byte 5,0
-yn:             .byte 5,0
+xa:             .fill 8,0
+ya:             .fill 8,0
+xa2:            .fill 8,0
+ya2:            .fill 8,0
+xn:             .fill 8,0
+yn:             .fill 8,0
         
         //
         // the code
@@ -257,15 +278,35 @@ loopx:
         jmp *
 
 
+.macro debug_x() {        
+        lda x
+        cmp #$26
+        bne no_print
+        load_fac(xa)
+        format_fac($8a0, "xa ")
+        load_fac(ya)
+        format_fac($8b0, "ya ")
+        jmp *
+no_print:
+}
+        
+
 //
 // calculate col from xf, yf
 //
 calc:
-        lda #0
+        lda #1
         sta col
         move_float(xa, xf)
         move_float(ya, yf)
 !loop:
+        // col >= col_max
+        lda col
+        cmp #col_max
+        bmi !cont+
+        jmp !break+
+!cont:        
+
         // xa2 = xa * xa
         load_fac(xa)
         load_arg(xa)
@@ -278,20 +319,20 @@ calc:
         mul_fac_arg()
         store_fac(ya2)
 
+        // debug_x()
+        // load_fac(ya2)
+        
         // xa2 + ya2 >= 4.0
         add_fac_mem(xa2)
         compare_fac_mem(float_4)
-        bpl !break+
-
-        // col >= col_max
-        lda col
-        cmp #col_max
-        bpl !break+
-
+        bmi !cont+
+        jmp !break+
+!cont:                
         // xn = xa2 - ya2 + xf
         load_fac(ya2)
         load_arg(xa2)
         sub_arg_fac_to_fac()
+        
         add_fac_mem(xf)
         store_fac(xn)
 
