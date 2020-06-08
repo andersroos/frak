@@ -29,6 +29,12 @@
             jsr mem_to_fac
         }
 
+        .macro load_arg(source) {
+            ldy #>source
+            lda #<source
+            jsr mem_to_arg
+        }
+        
         .macro store_fac(target) {
             ldy #>target
             ldx #<target
@@ -39,6 +45,16 @@
             ldy #>mem
             lda #<mem
             jsr fac_mem_add
+        }
+
+        .macro mul_fac_arg() {
+            lda fac
+            jsr mul_fac_arg
+        }
+
+        .macro sub_arg_fac_to_fac() {
+            lda fac
+            jsr sub_arg_fac
         }
         
         .macro parse_float_str_len7_to_mem(str, mem) {
@@ -59,12 +75,18 @@
             store_fac(target)
         }       
 
-        .macro add_float(target, source) {
+        .macro add_floats(target, source) {
             load_fac(target)
             add_fac_mem(source)
             store_fac(target)
-        }       
-        
+        }
+
+        .macro compare_fac_mem(mem) {
+            ldy #>mem
+            lda #<mem
+            jsr cmp_fac_mem
+        }
+
         //
         // locations
         //
@@ -78,7 +100,11 @@
         .label str_to_fac_arg_hi = $23
         .label fac_to_mem = $bbd4       // mem in y/x
         .label mem_to_fac = $bba2       // men in y/a
+        .label mem_to_arg = $ba8c       // men in y/a
         .label fac_mem_add = $b867      // fac = fac + y/a
+        .label mul_fac_arg = $ba2b      // fac = fac * arg (exp in a)
+        .label sub_arg_fac = $b853      // fac = arg - fac (exp in a)
+        .label cmp_fac_mem = $bc5b      // cmp fac, y/a
         .label fac = $61
         .label arg = $69
         
@@ -86,6 +112,8 @@
         // variables
         //
 
+        .var col_max = 32
+        
         .segment Vars []
         *=$900 "Vars"
         
@@ -93,20 +121,33 @@ x:              .byte 0
 y:              .byte 0
 col:            .byte 0
 
-fx:             .byte 5,0
-fy:             .fill 5,0
+xf:             .byte 5,0
+yf:             .fill 5,0
 
-start_fx_str:   .text "-2.0000"
-start_fx:       .fill 5,0
+float_2:        .fill 5,0
+float_2_str:    .text "2.00000"
 
-delta_fx_str:   .text "0.01875"
-delta_fx:       .fill 5,0
+float_4:        .fill 5,0
+float_4_str:    .text "4.00000"
         
-start_fy_str:   .text "-1.5000"
-start_fy:       .fill 5,0
+start_xf_str:   .text "-2.0000"
+start_xf:       .fill 5,0
+
+delta_xf_str:   .text "0.01875"
+delta_xf:       .fill 5,0
         
-delta_fy_str:   .text "0.01500"
-delta_fy:       .fill 5,0
+start_yf_str:   .text "-1.5000"
+start_yf:       .fill 5,0
+        
+delta_yf_str:   .text "0.01500"
+delta_yf:       .fill 5,0
+
+xa:             .byte 5,0
+ya:             .byte 5,0
+xa2:            .byte 5,0
+ya2:            .byte 5,0
+xn:             .byte 5,0
+yn:             .byte 5,0
         
         //
         // the code
@@ -180,54 +221,107 @@ start:
         // prepare floating point data
         //
         
-        parse_float_str_len7_to_mem(start_fx_str, start_fx)
-        parse_float_str_len7_to_mem(delta_fx_str, delta_fx)
-        parse_float_str_len7_to_mem(start_fy_str, start_fy)
-        parse_float_str_len7_to_mem(delta_fy_str, delta_fy)
+        parse_float_str_len7_to_mem(start_xf_str, start_xf)
+        parse_float_str_len7_to_mem(delta_xf_str, delta_xf)
+        parse_float_str_len7_to_mem(start_yf_str, start_yf)
+        parse_float_str_len7_to_mem(delta_yf_str, delta_yf)
+        parse_float_str_len7_to_mem(float_2_str, float_2)
+        parse_float_str_len7_to_mem(float_4_str, float_4)
         
         //
         // loop over screen and fractal coordinates, hardcoded zoom (se above)
         //
         
-        move_float(fy, start_fy)
+        move_float(yf, start_yf)
         lda #0
         sta y
 loopy:
-        move_float(fx, start_fx)
+        move_float(xf, start_xf)
         lda #0
         sta x
 loopx:
         jsr calc
         jsr plot
-        add_float(fx, delta_fx)
+        add_floats(xf, delta_xf)
         inc x
         lda x
         cmp #160
         bne loopx
 
-        add_float(fy, delta_fy)
+        add_floats(yf, delta_yf)
         inc y
         cmp #200
         bne loopy
 
         // wait forever
-wait:   jmp wait
+        jmp *
 
 
 //
-// calculate col from fx, fy
+// calculate col from xf, yf
 //
 calc:
-        col = 0
-        x = fx
-        y = fy
-        while (x^2 + y^2 < 4 && col < 32) {
-           xn = x^2 - y^2 + fx
-           yn = 2 * x * y + fy
-           col += 1
-        }
-        if col >= 32 then col = 0
-        col &= 3
+        lda #0
+        sta col
+        move_float(xa, xf)
+        move_float(ya, yf)
+!loop:
+        // xa2 = xa * xa
+        load_fac(xa)
+        load_arg(xa)
+        mul_fac_arg()
+        store_fac(xa2)
+
+        // ya2 = ya * ya
+        load_fac(ya)
+        load_arg(ya)
+        mul_fac_arg()
+        store_fac(ya2)
+
+        // xa2 + ya2 >= 4.0
+        add_fac_mem(xa2)
+        compare_fac_mem(float_4)
+        bpl !break+
+
+        // col >= col_max
+        lda col
+        cmp #col_max
+        bpl !break+
+
+        // xn = xa2 - ya2 + xf
+        load_fac(ya2)
+        load_arg(xa2)
+        sub_arg_fac_to_fac()
+        add_fac_mem(xf)
+        store_fac(xn)
+
+        // ya = 2 * xa * ya + yf
+        load_fac(xa)
+        load_arg(ya)
+        mul_fac_arg()
+        load_arg(float_2)
+        mul_fac_arg()
+        add_fac_mem(yf)
+        store_fac(ya)
+
+        // xa = xn
+        move_float(xa, xn)
+        
+        // col += 1
+        inc col
+
+        jmp !loop-
+!break:  
+        // if col >= col_max then col = 0
+        lda col
+        cmp #col_max
+        bmi !less+
+        lda #0
+!less:
+        and #3
+        sta col
+        rts
+        
         
 //
 // set pixel in x,y to col
