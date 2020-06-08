@@ -98,7 +98,7 @@
             }
             
             ldx #0
-!loop:
+        !loop:
             lda $100,x
             sta to + i,x
             inx
@@ -106,6 +106,20 @@
             bne !loop-
             lda fac
         }
+
+        .macro debug_x() {        
+            lda x
+            cmp #$26
+            bne no_print
+            load_fac(xa)
+            format_fac($8a0, "xa ")
+            load_fac(ya)
+            format_fac($8b0, "ya ")
+            jmp *
+        no_print:
+        }
+        
+
         
         //
         // locations
@@ -276,21 +290,7 @@ loopx:
 
         // wait forever
         jmp *
-
-
-.macro debug_x() {        
-        lda x
-        cmp #$26
-        bne no_print
-        load_fac(xa)
-        format_fac($8a0, "xa ")
-        load_fac(ya)
-        format_fac($8b0, "ya ")
-        jmp *
-no_print:
-}
         
-
 //
 // calculate col from xf, yf
 //
@@ -319,9 +319,6 @@ calc:
         mul_fac_arg()
         store_fac(ya2)
 
-        // debug_x()
-        // load_fac(ya2)
-        
         // xa2 + ya2 >= 4.0
         add_fac_mem(xa2)
         compare_fac_mem(float_4)
