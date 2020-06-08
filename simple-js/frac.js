@@ -1,35 +1,41 @@
 
+const size = 800;
+const max_n = 32;
+
 function draw() {
     const canvas = document.getElementById("frac");
     const context = canvas.getContext("2d");
     context.fillStyle = "rgb(0,0,0)";
-    context.fillRect(0, 0, 200, 200);
+    context.fillRect(0, 0, size, size);
 
-    const max_iteration = 32;
+    const xd = 4/size;
+    const yd = 4/size;
     
-    const xd = 4/100;
-    const yd = 4/100;
-    
-    for (let yc = 0, y0 = -2; yc < 100; ++yc, y0 += yd) {
-        for (let xc = 0, x0 = -2; xc < 100; ++xc, x0 += xd) {
+    for (let yc = 0, y0 = -2; yc < size; ++yc, y0 += yd) {
+        for (let xc = 0, x0 = -2; xc < size; ++xc, x0 += xd) {
             let iteration = 0;
-            let x = 0;
-            let y = 0;
-            while ((x*x + y*y <= 4) && (iteration < max_iteration)) {
-                var xtemp = (x*x) - (y*y) + x0;
-                y = (2*x*y) + y0;
-                x = xtemp;
-                iteration++;
+            let x = x0;
+            let y = y0;
+            for (; iteration < max_n; ++iteration) {
+                let x2 = x * x;
+                let y2 = y * y;
+                if ((x2 + y2) >= 4) {
+                    break;
+                }
+                const xn = x2 - y2 + x0;
+                const yn = 2 * x * y + y0;
+                x = xn;
+                y = yn;
             }
             var val;
-            if (iteration >= max_iteration) {
+            if (iteration >= max_n) {
                 val = 0;
             } 
             else {
-                val = Math.floor(255 - (255 * (iteration / max_iteration)));
+                val = Math.floor(255 - (255 * (iteration / max_n)));
             }
             context.fillStyle = "rgb(" + val + "," + val + "," + val + ")";
-            context.fillRect(xc * 2, yc * 2, 2, 2);
+            context.fillRect(xc, yc, 1, 1);
         }
     }
 }

@@ -23,6 +23,24 @@
         // macros
         //
 
+        .macro load_fac(source) {
+            ldy #>source
+            lda #<source
+            jsr mem_to_fac
+        }
+
+        .macro store_fac(target) {
+            ldy #>target
+            ldx #<target
+            jsr fac_to_mem
+        }
+
+        .macro add_fac_mem(mem) {
+            ldy #>mem
+            lda #<mem
+            jsr fac_mem_add
+        }
+        
         .macro parse_float_str_len7_to_mem(str, mem) {
             // parse str string to floating point in fac
             lda #>str
@@ -33,9 +51,18 @@
             jsr str_to_fac
             
             // move fac to mem
-            ldy #>mem
-            ldx #<mem
-            jsr fac_to_mem
+            store_fac(mem)
+        }       
+        
+        .macro move_float(target, source) {
+            load_fac(source)  
+            store_fac(target)
+        }       
+
+        .macro add_float(target, source) {
+            load_fac(target)
+            add_fac_mem(source)
+            store_fac(target)
         }       
         
         //
@@ -50,6 +77,8 @@
         .label str_to_fac_arg_lo = $22
         .label str_to_fac_arg_hi = $23
         .label fac_to_mem = $bbd4       // mem in y/x
+        .label mem_to_fac = $bba2       // men in y/a
+        .label fac_mem_add = $b867      // fac = fac + y/a
         .label fac = $61
         .label arg = $69
         
@@ -155,25 +184,28 @@ start:
         parse_float_str_len7_to_mem(delta_fx_str, delta_fx)
         parse_float_str_len7_to_mem(start_fy_str, start_fy)
         parse_float_str_len7_to_mem(delta_fy_str, delta_fy)
-
-        jmp *
-
+        
         //
         // loop over screen and fractal coordinates, hardcoded zoom (se above)
         //
         
+        move_float(fy, start_fy)
         lda #0
         sta y
 loopy:
+        move_float(fx, start_fx)
         lda #0
         sta x
 loopx:
+        jsr calc
         jsr plot
+        add_float(fx, delta_fx)
         inc x
         lda x
         cmp #160
         bne loopx
 
+        add_float(fy, delta_fy)
         inc y
         cmp #200
         bne loopy
@@ -181,6 +213,21 @@ loopx:
         // wait forever
 wait:   jmp wait
 
+
+//
+// calculate col from fx, fy
+//
+calc:
+        col = 0
+        x = fx
+        y = fy
+        while (x^2 + y^2 < 4 && col < 32) {
+           xn = x^2 - y^2 + fx
+           yn = 2 * x * y + fy
+           col += 1
+        }
+        if col >= 32 then col = 0
+        col &= 3
         
 //
 // set pixel in x,y to col

@@ -86,12 +86,18 @@ The actual fractal program:
 200 goto 200 : rem wait forever
     
 500 rem calulate col for pixel
-501 xa=0 : ya=0 : n=0
-502 r = al + x*dx : i = bl + y*dy
-510 if (xa*xa+ya*ya) >= 4 or n > =mi then goto 520
-511   xn=xa*xa-ya*ya+r : yn=2*xa*ya+i
-512   xa=xn : ya=yn : n=n+1
-513   goto 510
+501 n=1
+502 x0 = al + x * dx
+503 y0 = bl + y * dy
+504 xa = x0
+505 ya = y0
+510    x2 = xa * xa
+511    y2 = ya * ya
+512    if (x2 + y2) >= 4 or n >= mi then goto 520
+513       xn = x2 - y2 + x0
+514       yn = 2 * xa * ya + y0
+515       xa=xn : ya=yn : n=n+1
+516       goto 510
 520 if n => mi then n=0
 521 f = n and 3
 522 return
@@ -110,7 +116,7 @@ Orginal program with comments:
 
 10 FOR a=8192 TO 16191                 # clear graphics mem
 20 POKE a,0                            
-30 NEXT a                              
+30  NEXT a                              
 40 POKE 53265,PEEK(53265) OR 32        # multi color mode
 50 POKE 53270,PEEK(53270) OR 16        # multi color mode
 60 POKE 53272,PEEK(53272) OR 8         # använd grafikminne från 8192
