@@ -1,31 +1,24 @@
 
-const size = 768;
-const max_n = 32;
+const size = 800;
+const x_size = size;
+const y_size = size;
+const max_n = 1024 * 1024 * 24;
+const id = "sune";
 
 function init() {
     const canvas = document.getElementById("canvas");
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
-    
     const context = canvas.getContext("2d");
-    context.fillStyle = "rgb(16,16,16)";
-    context.fillRect(0, 0, size, size);
+    context.fillStyle = "rgb(64,64,64)";
+    context.fillRect(0, 0, x_size, y_size);
 
-    worker = new Worker("./frac-worker.js");
+    worker = new Worker("./frac-dispatcher.js");
 
     worker.onmessage = event => {
-        const {x, y, n} = event.data;
-        if (n >= max_n) {
-            val = 0;
-        } 
-        else {
-            val = Math.floor(255 - (255 * (n / max_n)));
-        }
-        context.fillStyle = "rgb(" + val + "," + val + "," + val + ")";
-        context.fillRect(x, y, 1, 1);
+        const {id, x, y, x_size, y_size, bytes} = event.data;
+        context.putImageData(new ImageData(new Uint8ClampedArray(bytes), x_size, y_size), x, y);
     };
 
-    worker.postMessage({size, max_n});
+    worker.postMessage({id, x_size, y_size, max_n, op: "fractal", src: "gui"});
 }
 
 document.addEventListener("DOMContentLoaded", function() {
