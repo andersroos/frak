@@ -1,3 +1,4 @@
+import { hej } from './common/col.js';
 
 const size = 800;
 const x_size = size;
@@ -11,7 +12,9 @@ function init() {
     context.fillStyle = "rgb(64,64,64)";
     context.fillRect(0, 0, x_size, y_size);
 
-    worker = new Worker("./frac-dispatcher.js");
+    hej();
+    
+    const worker = new Worker("./frac-dispatcher.js");
 
     worker.onmessage = event => {
         const {id, x, y, x_size, y_size, bytes} = event.data;

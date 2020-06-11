@@ -1,19 +1,22 @@
 
 
-all: c64
+default: build
+	make -j run
 
-init: init-js
+init:
+	cd web && npm install
 
-init-js:
-	npm install -g yarn
-	yarn install
-
-c64:
+build-c64:
 	make -C c64
 
+build: build-c64
+
+run-web:
+	cd web && npm run dev-server
+
+run: run-web
 
 clean:
 	git clean -n -fdx -e .idea
 
-.PHONY: all c64 init init-js clean
-
+.PHONY: all c64 init clean build-c64 build run run-web
