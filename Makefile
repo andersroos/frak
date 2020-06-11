@@ -5,8 +5,8 @@ all: c64
 init: init-js
 
 init-js:
-	yarn set version berry
-	yarn set version latest
+	npm install -g yarn
+	yarn install
 
 c64:
 	make -C c64

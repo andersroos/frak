@@ -1,2 +1,14 @@
+
+# c64
 *.d64
+
+# do not add editor config to public repo
 .idea
+
+# yarn non zero install
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/pnpify
+!.yarn/versions
+.pnp.*
