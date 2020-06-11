@@ -12,4 +12,8 @@ c64:
 	make -C c64
 
 
-.PHONY: all c64 init init-js
+clean:
+	git clean -n -fdx -e .idea
+
+.PHONY: all c64 init init-js clean
+
