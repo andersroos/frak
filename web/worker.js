@@ -1,7 +1,12 @@
+//
+// Entry for fractal worker web worker.
+//
+
+import {INFINITE} from "./color";
 
 onmessage = event => {
-    const {id, x, y, x_size, y_size, x0_start, y0_start, y0_delta, x0_delta, max_n, worker_index} = event.data;
-    // console.info("starting block", event.data);
+    const {id, x_start, y_start, x_size, y_size, x0_start, y0_start, y0_delta, x0_delta, max_n, worker_index} = event.data;
+    
     const data = new Uint32Array(y_size * x_size);
     
     for (let yi = 0, y0 = y0_start; yi < y_size; ++yi, y0 += y0_delta) {
@@ -20,10 +25,11 @@ onmessage = event => {
                 xn = next_xn;
                 yn = next_yn;
             }
-            data[yi * y_size + xi] = n;
+            data[yi * y_size + xi] = n === max_n ? INFINITE : n;
         }
     }
-    // console.info("block done", event.data);
     
-    postMessage({bytes: data.buffer, id, x, y, x_size, y_size, op: "block", src: "worker", worker_index, max_n}, [data.buffer]);
+    postMessage({bytes: data.buffer, id, x_start, y_start, x_size, y_size, worker_index, max_n}, [data.buffer]);
 };
+
+
