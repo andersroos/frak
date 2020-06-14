@@ -15,10 +15,10 @@ const mapGradient = (fraction, from, to) => {
     const green = 0xff00;
     const blue = 0xff;
     let res = 0xff000000;
-    res |= (((to & red) - (from & red)) * fraction + (from & red)) & red;
+    res |= ((((to & red) - (from & red)) * fraction + (from & red)) & red) >> 16;
     res |= (((to & green) - (from & green)) * fraction + (from & green)) & green;
-    res |= (((to & blue) - (from & blue)) * fraction + (from & blue)) & blue;
-    return res | 0xff0000ff;
+    res |= ((((to & blue) - (from & blue)) * fraction + (from & blue)) & blue) << 16;
+    return res;
 };
 
 

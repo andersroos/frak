@@ -10,6 +10,9 @@ export default class Gui {
         this.context.canvas.height = core.y_size;
         
         this.data = new Uint32Array(core.x_size * core.y_size);
+        this.bufferBytes = new ArrayBuffer(4 * this.core.x_size * this.core.y_size);
+        this.bufferMapped = new Uint32Array(this.bufferBytes);
+        this.bufferImage = new ImageData(new Uint8ClampedArray(this.bufferBytes), this.core.x_size, this.core.y_size);
         
         this.colorMapper = new ColorMapper();
         
@@ -22,13 +25,10 @@ export default class Gui {
     }
     
     paintFractal() {
-        const bytes = new ArrayBuffer(4 * this.core.x_size * this.core.y_size);
-        const mapped = new Uint32Array(bytes);
         for (let i = 0; i < this.data.length; ++i) {
-            mapped[i] = this.colorMapper.mapColor(this.data[i]);
+            this.bufferMapped[i] = this.colorMapper.mapColor(this.data[i]);
         }
-        const image = new ImageData(new Uint8ClampedArray(bytes), this.core.x_size, this.core.y_size);
-        this.context.putImageData(image, 0, 0);
+        this.context.putImageData(this.bufferImage, 0, 0);
     }
     
     putBlock({x_start, y_start, x_size, y_size, bytes}) {
