@@ -4,9 +4,9 @@ export default class Core {
     
     constructor(gui) {
         this.gui = gui;
-        this.x_size = 400;
-        this.y_size = 400;
-        this.max_n = 64;
+        this.x_size = 800;
+        this.y_size = 800;
+        this.max_n = 64 * 200;
         
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
@@ -28,7 +28,7 @@ export default class Core {
     }
     
     onFinished() {
-        console.info("onFinished in ", Date.now() - this.startTime, "ms");
+        console.info("finished in", Date.now() - this.startTime, "ms");
     }
     
     onBlockComplete(data) {

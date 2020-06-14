@@ -1,5 +1,7 @@
 import {ColorMapper, INFINITE, NOT_CALCULATED} from "./color";
 
+const SCREEN_UPDATE_DELAY_MS = 40;
+
 export default class Gui {
 
     init(core) {
@@ -16,19 +18,30 @@ export default class Gui {
         
         this.colorMapper = new ColorMapper();
         
+        this.lastPaint = 0;
+        this.paintDelayInProgress = false;
         this.clear();
     }
     
     clear() {
         this.data.fill(NOT_CALCULATED);
-        this.paintFractal();
+        this.paint();
     }
     
-    paintFractal() {
-        for (let i = 0; i < this.data.length; ++i) {
-            this.bufferMapped[i] = this.colorMapper.mapColor(this.data[i]);
+    paint() {
+        const now = Date.now();
+        if (this.lastPaint + SCREEN_UPDATE_DELAY_MS <= now) {
+            this.paintDelayInProgress = false;
+            for (let i = 0; i < this.data.length; ++i) {
+                this.bufferMapped[i] = this.colorMapper.mapColor(this.data[i]);
+            }
+            this.context.putImageData(this.bufferImage, 0, 0);
+            this.lastPaint = Date.now();
         }
-        this.context.putImageData(this.bufferImage, 0, 0);
+        else if (!this.paintDelayInProgress) {
+            this.paintDelayInProgress = true;
+            setTimeout(this.paint.bind(this), SCREEN_UPDATE_DELAY_MS);
+        }
     }
     
     putBlock({x_start, y_start, x_size, y_size, bytes}) {
@@ -38,6 +51,6 @@ export default class Gui {
             const sourceOffset = y * x_size;
             this.data.set(blockData.subarray(sourceOffset, sourceOffset + x_size), targetOffset + y * this.core.x_size);
         }
-        this.paintFractal();
+        this.paint();
     }
 }
