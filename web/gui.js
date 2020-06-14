@@ -33,7 +33,6 @@ export default class Gui {
     
     putBlock({x_start, y_start, x_size, y_size, bytes}) {
         const blockData = new Uint32Array(bytes);
-        console.info(blockData.length);
         const targetOffset = y_start * this.core.y_size + x_start;
         for (let y = 0; y < y_size; ++y) {
             const sourceOffset = y * x_size;

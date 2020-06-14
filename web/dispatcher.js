@@ -27,7 +27,8 @@ class Dispatcher {
         const {id, x_size, y_size, max_n} = params;
 
         this.blocks = [];
-        this.id = null;
+        this.id = id;
+        this.workingCount = 0;
         
         console.info(`starting id=${id}, max_n=${max_n}, y_size=${y_size}`);
         
@@ -51,7 +52,6 @@ class Dispatcher {
                 max_n
             });
         }
-        console.info("start", this.workers);
         this.workers.forEach((w, i) => this.postBlock(i));
     }
     
@@ -60,12 +60,19 @@ class Dispatcher {
             const block = this.blocks.shift();
             block.worker_index = worker_index;
             this.workers[worker_index].postMessage(block);
+            this.workingCount++;
         }
     }
     
     onBlockComplete(data) {
-        this.postBlock(data.worker_index);
-        postMessage(data, [data.bytes]);
+        if (data.id === this.id) {
+            this.workingCount--;
+            this.postBlock(data.worker_index);
+            postMessage(data, [data.bytes]);
+            if (this.workingCount === 0) {
+                postMessage({op: op.FINISHED});
+            }
+        }
     }
 }
 
@@ -73,7 +80,6 @@ const dispatcher = new Dispatcher();
 
 onmessage = function(event) {
     const params = event.data;
-    console.info("dispatcher got event", event);
     switch (params.op) {
         case op.CONFIGURE: dispatcher.onConfigure(params); break;
         case op.START: dispatcher.onStart(params); break;

@@ -49,5 +49,5 @@ document.addEventListener("DOMContentLoaded", function() {
         context.putImageData(imageData, 0, yi);
     }
     
-    console.info("finished in", Date.now() - start, "ms");
+    console.info("onFinished in", Date.now() - start, "ms");
 });
