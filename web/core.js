@@ -29,6 +29,7 @@ export default class Core {
     
     onFinished() {
         console.info("finished in", Date.now() - this.startTime, "ms");
+        console.info("average paint time: ", this.gui.paintTime / this.gui.paintCount, "ms");
     }
     
     onBlockComplete(data) {

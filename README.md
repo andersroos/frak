@@ -4,7 +4,7 @@ Trying out different libs/languages doing fractal calculations.
 
 # Structure
 
-gui -> core -> dispatcher -> workers (1 - n)
+gui and core -> dispatcher -> workers (1 - n)
 
 registry
 
@@ -21,21 +21,23 @@ registry
 * Dispatcher communication.
 * Block strategy?
 * Statistics.
-* In browser gui worker?
+* In browser gui worker.
+* Partly built in web assembly.
 
 ## Dispatcher
 
 * Manage workers.
 * Block queue.
 * Block strategy?
-* Web worker, server or other.
+* Multiple implementations, web worker, server or other.
 
 ## Worker
 
 * Calculate blocks.
-* Web worker, server or other.
+* Multiple implementations, web worker, server or other.
 
 ## Registry
 
 * Registry for dispatchers.
+* Js client that will fake no registry if no registry.
 * Node server.

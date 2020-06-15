@@ -2,6 +2,13 @@
 <head>
   <meta charset="UTF-8">
   <script type="module" src="main.js"></script>
+  <script>
+      Promise.all([
+          new Promise(resolve => window.Module = { onRuntimeInitialized: resolve }),       // Wait for wasm module to be available.
+          new Promise(resolve => document.addEventListener("DOMContentLoaded", resolve)),  // Wait for dom to be available.
+      ]).then(() => init());
+  </script>
+  <script src="corelib.js"></script>
   <title>Frak</title>
 </head>
 <body style="background: #000">
