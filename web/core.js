@@ -6,7 +6,7 @@ export default class Core {
         this.gui = gui;
         this.x_size = 800;
         this.y_size = 800;
-        this.max_n = 64 * 200;
+        this.max_n = 64 * 20000;
         
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);

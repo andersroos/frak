@@ -2,7 +2,7 @@ MAKEFILE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 BASE_DIR := $(realpath $(CURDIR)/$(MAKEFILE_DIR))
 
 CPP_WASM=docker run --rm -u $(shell id -u):$(shell id -g) -v $(BASE_DIR):/src trzeci/emscripten em++ -O3
-CORELIB_OBJS=web/screen.bc
+CORELIB_OBJS=web/corelib.bc
 
 default: build
 	make -j run
@@ -42,3 +42,7 @@ idea:
 	@git grep -e IDEA --and --not -e "git grep -e IDEA" || true
 
 .PHONY: all c64 init git-clean clean build-c64 build run run-web idea todo
+
+# DO NOT DELETE
+
+web/corelib.bc: web/screen.hpp web/color_mapper.hpp

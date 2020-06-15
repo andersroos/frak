@@ -11,4 +11,8 @@ node_modules
 # web
 web/corelib.wasm
 web/corelib.js
-web/*.o
+web/*.bc
+
+# Make
+Makefile.bak
+
