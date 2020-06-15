@@ -3,7 +3,7 @@
 //
 
 import {INFINITE} from "./color";
-import op from "./op";
+import {BLOCK_COMPLETE} from "./op";
 
 onmessage = event => {
     const {id, x_start, y_start, x_size, y_size, x0_start, y0_start, y0_delta, x0_delta, max_n, worker_index} = event.data;
@@ -30,7 +30,7 @@ onmessage = event => {
         }
     }
     
-    postMessage({op: op.BLOCK_COMPLETE, bytes: data.buffer, id, x_start, y_start, x_size, y_size, worker_index, max_n}, [data.buffer]);
+    postMessage({op: BLOCK_COMPLETE, bytes: data.buffer, id, x_start, y_start, x_size, y_size, worker_index, max_n}, [data.buffer]);
 };
 
 

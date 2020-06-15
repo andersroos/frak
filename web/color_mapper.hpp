@@ -40,7 +40,7 @@ using namespace std;
 
 // Return a pulsing color based on col.
 uint32_t pulse_col32(int32_t col24, int32_t time_ms) {
-   int32_t dim = abs(int32_t(time_ms % 1024) - 512) >> 4;
+   int32_t dim = abs(int32_t(time_ms % 1024) - 512) >> 3;
    int32_t red = max(0, ((col24 & RED_MASK) >> 16) - dim);
    int32_t green = max(0, ((col24 & GREEN_MASK) >> 8) - dim);
    int32_t blue = max(0, (col24 & BLUE_MASK) - dim);

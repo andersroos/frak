@@ -2,14 +2,14 @@
 // Entry point in the browser.
 //
 
-import Gui from './gui.js';
-import Core from './core.js';
+import Core from './core';
+import Screen from './screen';
 
 window.init = () => {
     console.info("setting up core and gui");
-    const gui = new Gui();
-    const core = new Core(gui);
-    gui.init(core);
+    
+    const screen = new Screen();
+    const core = new Core(screen);
     core.start();
 };
 

@@ -24,6 +24,14 @@ struct Screen {
          }
       }
    }
+
+   void fill_rect(uint32_t x_start, uint32_t x_delta, uint32_t y_start, uint32_t y_delta, uint32_t depth) {
+      for (uint32_t y = 0; y < y_delta; ++y) {
+         for (uint32_t x = 0; x < x_delta; ++x) {
+            data[(y + y_start) * x_size + x + x_start] = depth;
+         }
+      }
+   }
    
    void clear() {
       for (uint32_t i = 0; i < y_size * x_size; ++i) {
@@ -35,7 +43,7 @@ struct Screen {
       return emscripten::val(emscripten::typed_memory_view(x_size * y_size * 4, (uint8_t*) image));
    }
 
-   emscripten::val ref_data_bytes() {
+   emscripten::val ref_data() {
       return emscripten::val(emscripten::typed_memory_view(x_size * y_size,  data));
    }
    

@@ -1,10 +1,6 @@
 
-
-const op = {
-    START: "start",
-    CONFIGURE: "configure",
-    BLOCK_COMPLETE: "block_complete",
-    FINISHED: "finished",
-};
-
-export default op;
+export const START = "start";
+export const CONFIGURE = "configure";
+export const BLOCK_COMPLETE = "block_complete";
+export const BLOCK_STARTED = "block_started";
+export const FINISHED = "finished";

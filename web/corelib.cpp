@@ -8,7 +8,8 @@ EMSCRIPTEN_BINDINGS(corelib) {
       .function("setColorMap", &Screen::set_color_map)
       .function("paint", &Screen::paint)
       .function("clear", &Screen::clear)
+      .function("fillRect", &Screen::fill_rect)
       .function("refImageBytes", &Screen::ref_image_bytes)
-      .function("refDataBytes", &Screen::ref_data_bytes)
+      .function("refData", &Screen::ref_data)
       ;
 }

@@ -1,5 +1,4 @@
-
-import op from "./op";
+import {BLOCK_STARTED, CONFIGURE, FINISHED, START} from "./op";
 
 class Dispatcher {
     constructor() {
@@ -61,6 +60,7 @@ class Dispatcher {
             block.worker_index = worker_index;
             this.workers[worker_index].postMessage(block);
             this.workingCount++;
+            postMessage({op: BLOCK_STARTED, id: block.id, x_start: block.x_start, x_size: block.x_size, y_start: block.y_start, y_size: block.y_size});
         }
     }
     
@@ -70,7 +70,7 @@ class Dispatcher {
             this.postBlock(data.worker_index);
             postMessage(data, [data.bytes]);
             if (this.workingCount === 0) {
-                postMessage({op: op.FINISHED});
+                postMessage({op: FINISHED});
             }
         }
     }
@@ -81,8 +81,8 @@ const dispatcher = new Dispatcher();
 onmessage = function(event) {
     const params = event.data;
     switch (params.op) {
-        case op.CONFIGURE: dispatcher.onConfigure(params); break;
-        case op.START: dispatcher.onStart(params); break;
+        case CONFIGURE: dispatcher.onConfigure(params); break;
+        case START: dispatcher.onStart(params); break;
         default: throw new Error(`unkwnon op ${params.op}`);
     }
 };
