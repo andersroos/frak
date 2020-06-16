@@ -80,6 +80,7 @@ export default class Screen {
         this.context.canvas.height = Y_SIZE;
         
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
+        this.screen.setColorMap("0x000000-#62-0xffffff");
         this.screen.clear();
         
         this.imageBytesRef = this.screen.refImageBytes();

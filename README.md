@@ -41,3 +41,9 @@ registry
 * Registry for dispatchers.
 * Js client that will fake no registry if no registry.
 * Node server.
+
+# Feature Requests
+
+* Back/Undo for zoom (and other operations).
+* Statistics.
+* Color sequences.
