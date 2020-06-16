@@ -11,14 +11,14 @@ const uint32_t NOT_FINAL =      0xfffffffd;
 const uint32_t FAIL =           0xfffffffc;
 const uint32_t INFINITE =       0xfffffffb;
 
-const uint32_t MAX_COL = 64;
+const uint32_t MAX_COL = 128;
 
 const int32_t RED_MASK = 0xff0000;
 const int32_t GREEN_MASK = 0xff00;
 const int32_t BLUE_MASK = 0xff;
 
-const uint32_t col_from = 0x101010;
-const uint32_t col_to = 0xf0f0f0;
+const uint32_t col_from = 0xffffff;
+const uint32_t col_to = 0xff0000;
 
 using namespace std;
 
@@ -28,7 +28,7 @@ using namespace std;
  * Color specs are written in 24 bit rgb (hi -> lo) on the folowing format:
  *    <format> := <flags> ";" <color-sequences>
  *    <flags> := <flag> ";" <flag>
- *    <flag> := "wraps" | "cycle"
+ *    <flag> := "wrap" | "cycle" | "stretch"
  *    <color-sequence> := <color-sequence> "-" <color> | <color-sequence> "-#" <gradient count> "-" <color>
  *    <color> := <string>
  *    <gradient count> := <integer>

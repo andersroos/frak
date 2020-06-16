@@ -1,6 +1,35 @@
 import { X_SIZE, Y_SIZE } from "./dimensions";
 import {CALCULATING} from "./color";
 
+
+const asRectWithAspectRatio = (first, second, ratio) => {
+    // Always keep th first point fixed and alter the second.
+    let x = first.x;
+    let y = first.y;
+    let dx = second.x - x;
+    let dy = second.y - y;
+    
+    // Fix aspect ratio to match ratio dx/dy.
+    if (Math.abs(dx * ratio) > Math.abs(dy)) {
+       dy = dx * ratio;
+    }
+    else {
+        dx = dy / ratio;
+    }
+
+    // Now shift rect so dx and dy are positive.
+    if (dx < 0) {
+        x += dx;
+        dx = -dx;
+    }
+    if (dy < 0) {
+        y += dy;
+        dy = -dy;
+    }
+    return {x, y, dx, dy};
+};
+
+
 class MouseState {
     
     constructor(canvas, onMouseEvent, onMouseRect) {
@@ -14,6 +43,10 @@ class MouseState {
     
     mouseMove(e) {
         this.hover = {x: e.offsetX, y: e.offsetY};
+        if (this.down && (e.buttons & 1) === 0) {
+            // Button was down but released outside canvas.
+            this.down = null;
+        }
         if (this.onMouseEvent) this.onMouseEvent();
     }
     
@@ -84,9 +117,10 @@ export default class Screen {
 
                 if (down) {
                     if (hover) {
+                        const {x, y, dx, dy} = asRectWithAspectRatio(down, hover, X_SIZE / Y_SIZE);
                         this.context.lineWidth = 1;
                         this.context.strokeStyle = '#' + col.padStart(6, '0');
-                        this.context.strokeRect(down.x, down.y, hover.x - down.x, hover.y - down.y);
+                        this.context.strokeRect(x, y, dx, dy);
                     }
                 }
                 else if (hover) {
@@ -118,9 +152,10 @@ export default class Screen {
     }
     
     onMouseRect(start, end) {
+        const {x, y, dx, dy} = asRectWithAspectRatio(start, end, X_SIZE / Y_SIZE);
         console.info("rect", start, end);
         if (this.onSelectedZoom) {
-            this.onSelectedZoom(Math.min(start.x, end.x), Math.min(start.y, end.y), Math.max(1, Math.abs(start.x - end.x)), Math.max(1, Math.abs(start.y - end.y)));
+            this.onSelectedZoom(x, y, dx, dy);
         }
     }
     
