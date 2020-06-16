@@ -21,28 +21,34 @@ export default class Screen {
         this.paintTime = 0;
         this.paintCount = 0;
         
+        this.lastEvent = performance.now();
+        
         requestAnimationFrame(this.paint.bind(this));
     }
 
     // Paint the canvas if dirty.
     paint() {
-        // Request the screen to be painted to image data, then copy image to canvas.
-        const start = performance.now();
-        this.screen.paint(Math.floor(performance.now()));
-        this.context.putImageData(this.imageData, 0, 0);
-        this.paintTime += performance.now() - start;
-        this.paintCount++;
+        if (performance.now() < this.lastEvent + 30000) {
+            // Request the screen to be painted to image data, then copy image to canvas.
+            const start = performance.now();
+            this.screen.paint(Math.floor(performance.now()));
+            this.context.putImageData(this.imageData, 0, 0);
+            this.paintTime += performance.now() - start;
+            this.paintCount++;
+        }
         requestAnimationFrame(this.paint.bind(this));
     }
     
     // Message when a block is started.
     startBlock({x_start, y_start, x_size, y_size}) {
+        this.lastEvent = performance.now();
         // noinspection JSSuspiciousNameCombination
         this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
     }
     
     // Put a calculated block into the screen data.
     putBlock({x_start, y_start, x_size, y_size, bytes}) {
+        this.lastEvent = performance.now();
         const blockData = new Uint32Array(bytes);
         const targetOffset = y_start * X_SIZE + x_start;
         for (let y = 0; y < y_size; ++y) {
@@ -56,5 +62,4 @@ export default class Screen {
         this.paintCount = 0;
         this.paintTime = 0;
     }
-    
 }
