@@ -1,4 +1,4 @@
-import {BLOCK_STARTED, CONFIGURE, FINISHED, START} from "./op";
+import {BLOCK_STARTED, CONFIGURE, FINISHED, INTERRUPT, START} from "./op";
 
 class Dispatcher {
     constructor() {
@@ -23,18 +23,13 @@ class Dispatcher {
     }
     
     onStart(params) {
-        const {id, x_size, y_size, max_n} = params;
+        const {id, x_size, y_size, max_n, x0_start, x0_delta, y0_start, y0_delta} = params;
 
         this.blocks = [];
         this.id = id;
         this.workingCount = 0;
         
         console.info(`starting id=${id}, max_n=${max_n}, y_size=${y_size}`);
-        
-        const x0_start = -2;
-        const y0_start = -2;
-        const x0_delta = 4 / x_size;
-        const y0_delta = 4 / y_size;
         
         // create one block per line to start (ok we need common class, so we will need to build this js soon).
         for (let y = 0; y < y_size; ++y) {
@@ -52,6 +47,12 @@ class Dispatcher {
             });
         }
         this.workers.forEach((w, i) => this.postBlock(i));
+    }
+    
+    onInterrupt({id}) {
+        if (this.id === id) {
+            this.blocks = [];
+        }
     }
     
     postBlock(worker_index) {
@@ -83,6 +84,7 @@ onmessage = function(event) {
     switch (params.op) {
         case CONFIGURE: dispatcher.onConfigure(params); break;
         case START: dispatcher.onStart(params); break;
+        case INTERRUPT: dispatcher.onInterrupt(params); break;
         default: throw new Error(`unkwnon op ${params.op}`);
     }
 };
