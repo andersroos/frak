@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <string>
+#include <sstream>
 
 const uint32_t NOT_CALCULATED = 0xffffffff;
 const uint32_t CALCULATING =    0xfffffffe;
@@ -37,14 +38,12 @@ using namespace std;
  *
  * Color specs are written in 24 bit rgb (hi -> lo) on the folowing format:
  *    <format> := <flags> ";" <color-sequences>
- *    <flags> := <flag> ";" <flag>
+ *    <flags> := <flags> ":" <flag>
  *    <flag> := "wrap" | "cycle" | "stretch"
- *    <color-sequence> := <color-sequence> "-" <color> | <color-sequence> "-#" <gradient count> "-" <color>
- *    <color> := <string>
- *    <gradient count> := <integer>
+ *    <color-sequence> := <color> | (<color> "-#" <count>) "-" <color-sequences>
  *  
- *  Example of length 84 (dark grey to white (long) to red (short) to dark grey (short)
- *    wraps;101010-#64-ffffff-#8-ff0000-#8-202020
+ *  Example of length 16 (dark grey to white (long) to red (short)
+ *    wraps;101010-#9-ffffff-#4-ff0000
  */
 
 
@@ -74,6 +73,10 @@ struct Gradient {
       b_delta = ((rgb_to & B_MASK) >> B_RGB_SHIFT) - int32_t(b_fr);
    }
 
+   uint32_t end() const {
+      return start_depth + length;
+   }
+   
    bool in_range(uint32_t depth) {
       return start_depth <= depth && depth < start_depth + length;
    }
@@ -101,12 +104,31 @@ struct Gradient {
    uint32_t length;
 };
 
+uint32_t fail_color(uint32_t time_ms) {
+   return pulse_col32(0xff0000, time_ms);
+}
+
 struct ColorMapper {
 
-   ColorMapper() : spec(0, 16, 0x008080, 0xffffff) {}
+   ColorMapper() {}
+
+   void set_flags(string flags) {
+      cycle = flags.find("cycle") != string::npos;
+      wrap = flags.find("wrap") != string::npos;
+      stretch = flags.find("stretch") != string::npos;
+   }
+
+   void remove_gradients() {
+      gradients.clear();
+   }
    
-   void set_spec(string spec) {
-      
+   void add_gradient(uint32_t rgb_fr, uint32_t count, uint32_t rgb_to) {
+      uint32_t end = 0;
+      if (not gradients.empty()) {
+         end = gradients.back().end();
+      }
+      Gradient gradient(end, count + 1, rgb_fr, rgb_to);
+      gradients.push_back(gradient);
    }
 
    uint32_t get_color(uint32_t x, uint32_t y, uint32_t depth, int32_t time_ms) {
@@ -114,8 +136,8 @@ struct ColorMapper {
          switch (depth) {
             case NOT_CALCULATED: return ((x >> 3) & 1) == ((y >> 3) & 1) ? 0xff080808 : 0xff181818;
             case CALCULATING: return pulse_col32(0xffffff, time_ms);
-            case NOT_FINAL: return pulse_col32(0x00ff00, time_ms);
-            case FAIL: return pulse_col32(0xff0000, time_ms);
+            case NOT_FINAL: return pulse_col32(0x0080ff, time_ms);
+            case FAIL: return fail_color(time_ms);
             case INFINITE: return 0xff000000;
             return 0xffff00ff;
          }
@@ -123,14 +145,24 @@ struct ColorMapper {
 
       // Hardcoded spec.
 
-      if (!spec.in_range(depth)) {
-         return pulse_col32(0x00ff00, time_ms);
+      if (gradients.empty()) {
+         return fail_color(time_ms);
       }
-      return spec.get_color(depth);
-   }
 
+      if (wrap) {
+         depth = depth % gradients.back().end();
+      }
+      
+      for (auto i = gradients.begin(); i != gradients.end(); ++i) {
+         if (i->in_range(depth)) {
+            return i->get_color(depth);
+         }
+      }
+      return pulse_col32(0x00ff00, time_ms);
+   }
+   
    bool cycle; // TODO
-   bool wrap;  // TODO
+   bool wrap;
    bool stretch; // TODO
    vector<Gradient> gradients;
 };

@@ -5,7 +5,9 @@
 EMSCRIPTEN_BINDINGS(corelib) {
    emscripten::class_<Screen>("Screen")
       .constructor<uint32_t, uint32_t>()
-      .function("setColorMap", &Screen::set_color_map)
+      .function("setFlags", &Screen::set_flags)
+      .function("removeGradients", &Screen::remove_gradients)
+      .function("addGradient", &Screen::add_gradient)
       .function("paint", &Screen::paint)
       .function("clear", &Screen::clear)
       .function("fillRect", &Screen::fill_rect)

@@ -80,7 +80,12 @@ export default class Screen {
         this.context.canvas.height = Y_SIZE;
         
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
-        this.screen.setColorMap("0x000000-#62-0xffffff");
+        // this.screen.setFlags("0x000000-#62-0xffffff");
+        this.screen.setFlags("cycle:wrap:stretch");
+        this.screen.removeGradients();
+        this.screen.addGradient(0x00ff80, 1024, 0xffffff);
+        this.screen.addGradient(0xffffff, 1024, 0xff0000);
+        this.screen.addGradient(0xff0000, 1024 , 0x00ff80);
         this.screen.clear();
         
         this.imageBytesRef = this.screen.refImageBytes();
@@ -98,6 +103,10 @@ export default class Screen {
         this.onSelectedZoom = onSelectedZoom;
         
         requestAnimationFrame(this.paint.bind(this));
+    }
+    
+    setColorSpec(spec) {
+    
     }
 
     // Paint the canvas if dirty.

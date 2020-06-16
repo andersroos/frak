@@ -12,9 +12,18 @@ struct Screen {
       image = new uint32_t[y_size * x_size];
    }
 
-   void set_color_map(std::string spec) {
-      color_mapper.set_spec(spec);
+   void set_flags(std::string flags) {
+      color_mapper.set_flags(flags);
    }
+
+   void remove_gradients() {
+      color_mapper.remove_gradients();
+   }
+
+   void add_gradient(uint32_t rgb_fr, uint32_t count, uint32_t rgb_to) {
+      color_mapper.add_gradient(rgb_fr, count, rgb_to);
+   }
+   
 
    void paint(int32_t time) {
       for (uint32_t y = 0; y < y_size; ++y) {
