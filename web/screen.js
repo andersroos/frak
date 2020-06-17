@@ -83,9 +83,9 @@ export default class Screen {
         // this.screen.setFlags("0x000000-#62-0xffffff");
         this.screen.setFlags("cycle:wrap:stretch");
         this.screen.removeGradients();
-        this.screen.addGradient(0x00ff80, 1024, 0xffffff);
-        this.screen.addGradient(0xffffff, 1024, 0xff0000);
-        this.screen.addGradient(0xff0000, 1024 , 0x00ff80);
+        this.screen.addGradient(0x00ff80, 16, 0xffffff);
+        this.screen.addGradient(0xffffff, 128, 0xff0000);
+        this.screen.addGradient(0xff0000, 128 , 0x00ff80);
         this.screen.clear();
         
         this.imageBytesRef = this.screen.refImageBytes();
@@ -101,8 +101,6 @@ export default class Screen {
         
         this.mouseState = new MouseState(this.context.canvas, () => this.onMouseEvent(), (start, end) => this.onMouseRect(start, end));
         this.onSelectedZoom = onSelectedZoom;
-        
-        requestAnimationFrame(this.paint.bind(this));
     }
     
     setColorSpec(spec) {
@@ -140,7 +138,6 @@ export default class Screen {
                 }
             }
         }
-        requestAnimationFrame(this.paint.bind(this));
     }
     
     // Message when a block is started.
