@@ -7,7 +7,7 @@ export default class Core {
     
     constructor() {
         this.screen = new Screen(this.onSelectedZoom.bind(this));
-        this.gui = new Gui(this);
+        this.gui = new Gui(this, this.screen);
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
         
@@ -76,6 +76,7 @@ export default class Core {
     onFinished() {
         this.endTime = performance.now();
         this.screen.logStatistics();
+        this.gui.onFinished();
     }
     
     onBlockComplete(data) {

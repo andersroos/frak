@@ -103,10 +103,6 @@ export default class Screen {
         this.onSelectedZoom = onSelectedZoom;
     }
     
-    setColorSpec(spec) {
-    
-    }
-
     // Paint the canvas if dirty.
     paint() {
         if (performance.now() < this.lastEvent + 30000) {
@@ -140,6 +136,11 @@ export default class Screen {
         }
     }
     
+    // Returns statistics from the fractal data.
+    getStatistics() {
+        return this.screen.getStatistics();
+    }
+    
     // Message when a block is started.
     startBlock({x_start, y_start, x_size, y_size}) {
         this.lastEvent = performance.now();
@@ -168,7 +169,6 @@ export default class Screen {
     
     onMouseEvent() {
         this.lastEvent = performance.now();
-        // console.info(this.mouseState.hover);
     }
     
     logStatistics() {

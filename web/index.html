@@ -8,7 +8,7 @@
       src: local('LCDM2N'), url('./fonts/LCDM2N.woff') format('woff'), url('./fonts/LCDM2N.ttf') format('truetype');
     }
     p {
-      margin: 0;
+      margin: 4px 0;
     }
   </style>
   <script type="module" src="main.js"></script>
@@ -24,8 +24,13 @@
 <body style="background: #000; color: #0f0; font-family: LCDM2N,monospace; min-width: 1024px;">
   <div>
     <canvas id="canvas" style="background: #010; width: 768px; height: 768px;"></canvas>
-    <div style="display: inline-block; vertical-align: top;">
+    <div style="display: inline-block; margin-left: 8px; vertical-align: top; max-width: 212px">
       <p>ELAPSED <span id="elapsed"></span></p>
+      <p>MIN_DEPTH <span id="min-depth"></span></p>
+      <svg id="histogram">
+      </svg>
+      <p>HISTOGRAM_MAX <span id="histogram-max">inf</span></p>
+      <p>MAX_DEPTH <span id="max-depth"></span></p>
     </div>
   </div>
 </body>
