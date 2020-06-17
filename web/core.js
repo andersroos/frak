@@ -63,6 +63,7 @@ export default class Core {
     
     onSelectedZoom(x, y, x_size, y_size) {
         this.interrupt();
+        this.screen.clear();
         console.info("zoom", x, y, x_size, y_size);
         console.info(this.x0_start, this.x0_delta, this.y0_start, this.y0_delta);
         this.x0_start = this.x0_start + x * this.x0_delta;

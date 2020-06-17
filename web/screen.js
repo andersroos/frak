@@ -86,6 +86,7 @@ export default class Screen {
         this.screen.addGradient(0x00ff80, 16, 0xffffff);
         this.screen.addGradient(0xffffff, 128, 0xff0000);
         this.screen.addGradient(0xff0000, 128 , 0x00ff80);
+        
         this.screen.clear();
         
         this.imageBytesRef = this.screen.refImageBytes();
@@ -134,6 +135,11 @@ export default class Screen {
                 }
             }
         }
+    }
+    
+    // Clear the data.
+    clear() {
+        this.screen.clear();
     }
     
     // Returns statistics from the fractal data.

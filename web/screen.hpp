@@ -70,7 +70,7 @@ struct Screen {
       uint64_t sum_depth = 0;
       for (uint32_t i = 0; i < y_size * x_size; ++i) {
          auto& depth = data[i];
-         
+
          if (depth >= INFINITE) {
             if (depth == INFINITE) {
                ++res.infinite_count;
@@ -92,19 +92,21 @@ struct Screen {
          res.avg_depth = float(res.sum_depth) / res.count;
 
          uint32_t max_depth = res.max_depth;
-         
+
          // second pass build histogram (using multple passes to only cover X% of data)
          while (true) {
             // calculate a target bucket size
             float new_bucket_size = std::max(1.0f, float(max_depth - res.min_depth) / res.histogram.size());
-            //std::cout << new_bucket_size << " " << res.bucket_size << std::endl;
-            if (new_bucket_size - res.bucket_size > -0.0001) {
+            if (new_bucket_size - res.bucket_size > -0.00001) {
                // if it did not change or changed for the worse we are done
                break;
             }
             res.bucket_size = new_bucket_size;
 
             // calculate new histogram with new bucket_size
+            for (uint32_t i = 0; i < res.histogram.size(); ++i) {
+               res.histogram[i] = 0;
+            }
             for (uint32_t i = 0; i < y_size * x_size; ++i) {
                auto& depth = data[i];
                if (depth >= INFINITE) continue;
@@ -115,7 +117,7 @@ struct Screen {
             }
 
             // find a new max_depth based on histogram
-            float limit = float(res.count) * 0.999;
+            float limit = float(res.count) * 0.9999;
             uint32_t count = 0;
             uint32_t index = 0;
             while (index < res.histogram.size() && count < limit) {

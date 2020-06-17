@@ -38,5 +38,6 @@ export default class Gui {
     onFinished() {
         const statistics = this.screen.getStatistics();
         console.info(statistics);
+        console.info(statistics.histogram.get(0), statistics.histogram.get(1), statistics.histogram.get(2));
     }
 }
