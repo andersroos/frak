@@ -16,9 +16,10 @@ struct Statistics {
    uint32_t count = 0; // count of all pixels with depth (not infinite)
    uint32_t infinite_count = 0;
    uint32_t histogram_max_depth = 0;
-   float    bucket_size = std::numeric_limits<float>::max();
+   uint32_t histogram_count = 0; // count of pixels shown in histogram
+   uint32_t histogram_max_value = 0;
+   float    histogram_bucket_size = std::numeric_limits<float>::max();
    vector<uint32_t> histogram = vector<uint32_t>(128, 0);
-   uint32_t histogram_max_count = 0;
 };
 
 struct Screen {
@@ -63,6 +64,7 @@ struct Screen {
       }
    }
 
+   // TODO Returning by value like this creates a memory leak, let js send an array to be filled.
    Statistics get_statistics() const {
       Statistics res;
 
@@ -96,43 +98,45 @@ struct Screen {
          // second pass build histogram (using multple passes to only cover X% of data)
          while (true) {
             // calculate a target bucket size
-            float new_bucket_size = std::max(1.0f, float(max_depth - res.min_depth) / res.histogram.size());
-            if (new_bucket_size - res.bucket_size > -0.00001) {
+            float new_histogram_bucket_size = std::max(1.0f, float(max_depth - res.min_depth) / res.histogram.size());
+            if (new_histogram_bucket_size - res.histogram_bucket_size > -0.00001) {
                // if it did not change or changed for the worse we are done
                break;
             }
-            res.bucket_size = new_bucket_size;
+            res.histogram_bucket_size = new_histogram_bucket_size;
 
-            // calculate new histogram with new bucket_size
+            // calculate new histogram with new histogram_bucket_size
             for (uint32_t i = 0; i < res.histogram.size(); ++i) {
                res.histogram[i] = 0;
             }
+            res.histogram_count = 0;
             for (uint32_t i = 0; i < y_size * x_size; ++i) {
                auto& depth = data[i];
                if (depth >= INFINITE) continue;
-               uint32_t index = floor((depth - res.min_depth) / res.bucket_size);
+               uint32_t index = floor((depth - res.min_depth) / res.histogram_bucket_size);
                if (index < res.histogram.size()) {
+                  ++res.histogram_count;
                   ++res.histogram[index];
                }
             }
 
             // find a new max_depth based on histogram
-            float limit = float(res.count) * 0.9999;
+            double limit = double(res.count) * 0.99;
             uint32_t count = 0;
             uint32_t index = 0;
             while (index < res.histogram.size() && count < limit) {
                count += res.histogram[index];
                ++index;
             }
-            max_depth = res.min_depth + index;
+            max_depth = res.min_depth + index * res.histogram_bucket_size;
          }
          // finally set the histogram_max_depth
          res.histogram_max_depth = std::max(max_depth, uint32_t(res.min_depth + res.histogram.size()));
 
-         // calculate max count so client can scale the diagriam easily
-         for (auto& count : res.histogram) {
-            res.histogram_max_count = std::max(count, res.histogram_max_count);
-         }         
+         // calculate max value so client can scale the diagriam easily
+         for (auto& value : res.histogram) {
+            res.histogram_max_value = std::max(value, res.histogram_max_value);
+         }
       }
 
       return res;

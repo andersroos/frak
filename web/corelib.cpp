@@ -10,10 +10,12 @@ EMSCRIPTEN_BINDINGS(corelib) {
       .field("maxDepth", &Statistics::max_depth)
       .field("minDepth", &Statistics::min_depth)
       .field("sumDepth", &Statistics::sum_depth)
+      .field("count", &Statistics::count)
+      .field("infiniteCount", &Statistics::infinite_count)
       .field("histogramMaxDepth", &Statistics::histogram_max_depth)
-      .field("histogramMaxCount", &Statistics::histogram_max_count)
+      .field("histogramMaxValue", &Statistics::histogram_max_value)
+      .field("histogramCount", &Statistics::histogram_count)
       .field("histogram", &Statistics::histogram)
-      .field("bucketSize", &Statistics::bucket_size)
       ;
 
    emscripten::class_<Screen>("Screen")
