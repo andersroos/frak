@@ -19,17 +19,17 @@ export default class Core {
         // this.y0_start = 0.6325883646614131;
         // this.y0_delta = 5.5964300526380535e-15;
         
-        // // Broken histogram:
-        // this.x0_start = 0.40286747167707915;
-        // this.x0_delta = 1.4672303879337928e-11;
-        // this.y0_start = -0.3501103227933188;
-        // this.y0_delta = 1.4672303879337928e-11;
+        // Broken histogram:
+        this.x0_start = 0.40286747167707915;
+        this.x0_delta = 1.4672303879337928e-11;
+        this.y0_start = -0.3501103227933188;
+        this.y0_delta = 1.4672303879337928e-11;
         
-        // Full:
-        this.x0_start = -2;
-        this.x0_delta = 4 / X_SIZE;
-        this.y0_start = -2;
-        this.y0_delta = 4 / Y_SIZE;
+        // // Full:
+        // this.x0_start = -2;
+        // this.x0_delta = 4 / X_SIZE;
+        // this.y0_start = -2;
+        // this.y0_delta = 4 / Y_SIZE;
 
         const paint = () => {
             this.screen.paint();

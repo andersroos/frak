@@ -10,6 +10,9 @@
     p {
       margin: 4px 0;
     }
+    .pre {
+      white-space: pre;
+    }
   </style>
   <script type="module" src="main.js"></script>
   <script>
@@ -25,12 +28,14 @@
   <div>
     <canvas id="canvas" style="background: #010; width: 768px; height: 768px;"></canvas>
     <div style="display: inline-block; margin-left: 8px; vertical-align: top; max-width: 212px">
-      <p>ELAPSED <span id="elapsed"></span></p>
-      <p>MIN_DEPTH <span id="min-depth"></span></p>
+      <p class="pre" style="margin-bottom: 4px;">ELAPSED       <span id="elapsed"></span> S</p>
+      <p class="pre" style="margin-bottom: 10px;" title="weight: sum of depth in all points">WEIGHT        <span id="weight"></span></p>
+      <p class="pre">MIN_DEPTH <span id="min-depth"></span></p>
+      <p class="pre">MAX_DEPTH <span id="max-depth"></span></p>
+      <p class="pre">MAX_N     <span id="max-n"></span></p>
+      <p class="pre">HISTOGRAM<span id="histogram-info"></span></p>
       <svg id="histogram">
       </svg>
-      <p>HISTOGRAM_MAX <span id="histogram-max">inf</span></p>
-      <p>MAX_DEPTH <span id="max-depth"></span></p>
     </div>
   </div>
 </body>

@@ -1,3 +1,5 @@
+import {formatInt} from "./util";
+import {MAX_N} from "./dimensions";
 
 const HISTOGRAM_SIZE = 128;
 
@@ -11,7 +13,6 @@ export default class Gui {
         
         const svg = document.getElementById('histogram');
         svg.setAttribute("height", HISTOGRAM_SIZE * 2);
-        console.info(svg);
         for (let i = 0; i < HISTOGRAM_SIZE; ++i) {
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.setAttribute("id", `histogram${i}`);
@@ -25,15 +26,19 @@ export default class Gui {
 
     paint() {
         const elapsed = this.core.getElapsedTime();
-        this.elapsed.textContent = elapsed ? (elapsed / 1000).toFixed(3).toString() : '';
-        
         const statistics = this.screen.getStatistics();
+
+        this.elapsed.textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
+        document.getElementById("weight").textContent = formatFloat(statistics.infiniteCount * MAX_N + statistics.sumDepth, {human: true, dec: 4, padTo: 9});
+        
+        const format = number => formatInt(number, {space: 3, padTo: 9});
+        
         for (let i = 0; i < HISTOGRAM_SIZE; ++i) {
             document.getElementById(`histogram${i}`).setAttribute("width", statistics.histogram.get(i) * 200 / statistics.histogramMaxValue || 0)
         }
-        document.getElementById("min-depth").textContent = statistics.minDepth.toString();
-        document.getElementById("histogram-max").textContent = statistics.histogramMaxDepth.toString();
-        document.getElementById("max-depth").textContent = statistics.maxDepth.toString();
+        document.getElementById("min-depth").textContent = format(statistics.minDepth);
+        document.getElementById("max-depth").textContent = format(statistics.maxDepth);
+        document.getElementById("max-n").textContent = format(MAX_N);
     }
     
     onFinished() {
