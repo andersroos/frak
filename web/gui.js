@@ -39,6 +39,12 @@ export default class Gui {
         document.getElementById("min-depth").textContent = format(statistics.minDepth);
         document.getElementById("max-depth").textContent = format(statistics.maxDepth);
         document.getElementById("max-n").textContent = format(MAX_N);
+        
+        
+        const percentage = formatFloat((statistics.histogramCount / statistics.count * 100 || 0), {dec: 2});
+        const bucketSize = formatFloat(statistics.histogramBucketSize || 0, {dec: 1});
+        const maxValue = formatInt(statistics.histogramMaxValue, {});
+        document.getElementById("histogram-info").textContent = `${percentage}% - ${bucketSize} - ${maxValue}`;
     }
     
     onFinished() {

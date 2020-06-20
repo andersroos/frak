@@ -15,6 +15,7 @@ EMSCRIPTEN_BINDINGS(corelib) {
       .field("histogramMaxDepth", &Statistics::histogram_max_depth)
       .field("histogramMaxValue", &Statistics::histogram_max_value)
       .field("histogramCount", &Statistics::histogram_count)
+      .field("histogramBucketSize", &Statistics::histogram_bucket_size)
       .field("histogram", &Statistics::histogram)
       ;
 

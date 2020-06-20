@@ -89,6 +89,7 @@ struct Screen {
       
       if (res.count == 0) {
          res.min_depth = 0;
+         res.histogram_bucket_size = 0;
       }
       else {
          res.avg_depth = float(res.sum_depth) / res.count;
@@ -121,7 +122,7 @@ struct Screen {
             }
 
             // find a new max_depth based on histogram
-            double limit = double(res.count) * 0.99;
+            double limit = double(res.count) * 0.998; // 99.8% will make bucket size 1 on full fractal.
             uint32_t count = 0;
             uint32_t index = 0;
             while (index < res.histogram.size() && count < limit) {
