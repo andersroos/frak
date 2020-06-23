@@ -2,7 +2,7 @@
 // Entry for fractal worker web worker.
 //
 
-import {INFINITE} from "./color";
+import {INFINITE} from "./colors";
 import {BLOCK_COMPLETE} from "./op";
 
 onmessage = event => {

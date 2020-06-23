@@ -1,5 +1,5 @@
 import { X_SIZE, Y_SIZE } from "./dimensions";
-import {CALCULATING} from "./color";
+import {CALCULATING} from "./colors";
 
 
 const asRectWithAspectRatio = (first, second, ratio) => {
@@ -74,19 +74,14 @@ class MouseState {
 // Handle screen data and painting of canvas.
 export default class Screen {
     
-    constructor(onSelectedZoom) {
+    constructor(core) {
+        this.core = core;
+        
         this.context = document.getElementById("canvas").getContext("2d");
         this.context.canvas.width = X_SIZE;
         this.context.canvas.height = Y_SIZE;
         
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
-        // this.screen.setFlags("0x000000-#62-0xffffff");
-        this.screen.setFlags("cycle:wrap:stretch");
-        this.screen.removeGradients();
-        this.screen.addGradient(0x00ff80, 16, 0xffffff);
-        this.screen.addGradient(0xffffff, 128, 0xff0000);
-        this.screen.addGradient(0xff0000, 128 , 0x00ff80);
-        
         this.screen.clear();
         
         this.imageBytesRef = this.screen.refImageBytes();
@@ -98,41 +93,36 @@ export default class Screen {
         this.paintTime = 0;
         this.paintCount = 0;
         
-        this.lastEvent = performance.now();
-        
         this.mouseState = new MouseState(this.context.canvas, () => this.onMouseEvent(), (start, end) => this.onMouseRect(start, end));
-        this.onSelectedZoom = onSelectedZoom;
     }
     
     // Paint the canvas if dirty.
     paint() {
-        if (performance.now() < this.lastEvent + 30000) {
-            // Request the screen to be painted to image data, then copy image to canvas.
-            const start = performance.now();
-            const time = Math.floor(performance.now());
-            this.screen.paint(time);
-            this.context.putImageData(this.imageData, 0, 0);
-            this.paintTime += performance.now() - start;
-            this.paintCount++;
-
-            const hover = this.mouseState.hover;
-            const down = this.mouseState.down;
-            if (hover || down) {
-                const col = Math.floor(Math.random() * 0x1000000).toString(16);
-
-                if (down) {
-                    if (hover) {
-                        const {x, y, dx, dy} = asRectWithAspectRatio(down, hover, X_SIZE / Y_SIZE);
-                        this.context.lineWidth = 1;
-                        this.context.strokeStyle = '#' + col.padStart(6, '0');
-                        this.context.strokeRect(x, y, dx, dy);
-                    }
+        // Request the screen to be painted to image data, then copy image to canvas.
+        const start = performance.now();
+        const time = Math.floor(performance.now());
+        this.screen.paint(time);
+        this.context.putImageData(this.imageData, 0, 0);
+        this.paintTime += performance.now() - start;
+        this.paintCount++;
+        
+        const hover = this.mouseState.hover;
+        const down = this.mouseState.down;
+        if (hover || down) {
+            const col = Math.floor(Math.random() * 0x1000000).toString(16);
+            
+            if (down) {
+                if (hover) {
+                    const {x, y, dx, dy} = asRectWithAspectRatio(down, hover, X_SIZE / Y_SIZE);
+                    this.context.lineWidth = 1;
+                    this.context.strokeStyle = '#' + col.padStart(6, '0');
+                    this.context.strokeRect(x, y, dx, dy);
                 }
-                else if (hover) {
-                    this.context.fillStyle = '#' + col.padStart(6, '0');
-                    this.context.fillRect(0, hover.y, X_SIZE, 1);
-                    this.context.fillRect(hover.x, 0, 1, Y_SIZE);
-                }
+            }
+            else if (hover) {
+                this.context.fillStyle = '#' + col.padStart(6, '0');
+                this.context.fillRect(0, hover.y, X_SIZE, 1);
+                this.context.fillRect(hover.x, 0, 1, Y_SIZE);
             }
         }
     }
@@ -149,14 +139,12 @@ export default class Screen {
     
     // Message when a block is started.
     startBlock({x_start, y_start, x_size, y_size}) {
-        this.lastEvent = performance.now();
         // noinspection JSSuspiciousNameCombination
         this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
     }
     
     // Put a calculated block into the screen data.
     putBlock({x_start, y_start, x_size, y_size, bytes}) {
-        this.lastEvent = performance.now();
         const blockData = new Uint32Array(bytes);
         const targetOffset = y_start * X_SIZE + x_start;
         for (let y = 0; y < y_size; ++y) {
@@ -168,13 +156,11 @@ export default class Screen {
     onMouseRect(start, end) {
         const {x, y, dx, dy} = asRectWithAspectRatio(start, end, X_SIZE / Y_SIZE);
         console.info("rect", start, end);
-        if (this.onSelectedZoom) {
-            this.onSelectedZoom(x, y, dx, dy);
-        }
+        this.core.onSelectedZoom(x, y, dx, dy);
     }
     
     onMouseEvent() {
-        this.lastEvent = performance.now();
+        this.core.onEvent();
     }
     
     logStatistics() {

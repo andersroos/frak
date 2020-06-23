@@ -1,5 +1,4 @@
 import {formatInt} from "./util";
-import {MAX_N} from "./dimensions";
 
 const HISTOGRAM_SIZE = 128;
 
@@ -24,22 +23,22 @@ export default class Gui {
         }
     }
 
-    paint() {
+    paint(statistics) {
         const elapsed = this.core.getElapsedTime();
-        const statistics = this.screen.getStatistics();
-
+    
         this.elapsed.textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
-        document.getElementById("weight").textContent = formatFloat(statistics.infiniteCount * MAX_N + statistics.sumDepth, {human: true, dec: 4, padTo: 9});
+        document.getElementById("weight").textContent = formatFloat(statistics.infiniteCount * this.core.max_n + statistics.sumDepth, {human: true, dec: 4, padTo: 9});
         
         const format = number => formatInt(number, {space: 3, padTo: 9});
         
         for (let i = 0; i < HISTOGRAM_SIZE; ++i) {
-            document.getElementById(`histogram${i}`).setAttribute("width", statistics.histogram.get(i) * 200 / statistics.histogramMaxValue || 0)
+            const e = document.getElementById(`histogram${i}`);
+            e.setAttribute("width", statistics.histogram.get(i) * 200 / statistics.histogramMaxValue || 0);
+            e.setAttribute("fill", "#" + formatInt(this.screen.screen.getColorRgb(statistics.minDepth + (statistics.histogramBucketSize || 0) * i), {base: 16, padTo: 6, padChar: '0'}));
         }
         document.getElementById("min-depth").textContent = format(statistics.minDepth);
         document.getElementById("max-depth").textContent = format(statistics.maxDepth);
-        document.getElementById("max-n").textContent = format(MAX_N);
-        
+        document.getElementById("max-n").textContent = format(this.core.max_n);
         
         const percentage = formatFloat((statistics.histogramCount / statistics.count * 100 || 0), {dec: 2});
         const bucketSize = formatFloat(statistics.histogramBucketSize || 0, {dec: 1});

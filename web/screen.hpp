@@ -45,11 +45,15 @@ struct Screen {
       for (uint32_t y = 0; y < y_size; ++y) {
          for (uint32_t x = 0; x < x_size; ++x) {
             uint32_t index = y * x_size + x;
-            image[index] = color_mapper.get_color(x, y, data[index], time);
+            image[index] = color_mapper.get_color_abgr(x, y, data[index], time);
          }
       }
    }
 
+   uint32_t get_color_rgb(uint32_t depth) {
+      return color_mapper.get_color_rgb(depth);
+   }
+   
    void fill_rect(uint32_t x_start, uint32_t x_delta, uint32_t y_start, uint32_t y_delta, uint32_t depth) {
       for (uint32_t y = 0; y < y_delta; ++y) {
          for (uint32_t x = 0; x < x_delta; ++x) {
@@ -99,7 +103,7 @@ struct Screen {
          // second pass build histogram (using multple passes to only cover X% of data)
          while (true) {
             // calculate a target bucket size
-            float new_histogram_bucket_size = std::max(1.0f, float(max_depth - res.min_depth) / res.histogram.size());
+            float new_histogram_bucket_size = std::max(1.0f, floor(float(max_depth - res.min_depth) / res.histogram.size()));
             if (new_histogram_bucket_size - res.histogram_bucket_size > -0.00001) {
                // if it did not change or changed for the worse we are done
                break;

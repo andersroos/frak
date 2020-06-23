@@ -25,6 +25,7 @@ EMSCRIPTEN_BINDINGS(corelib) {
       .function("removeGradients", &Screen::remove_gradients)
       .function("addGradient", &Screen::add_gradient)
       .function("paint", &Screen::paint)
+      .function("getColorRgb", &Screen::get_color_rgb)
       .function("clear", &Screen::clear)
       .function("fillRect", &Screen::fill_rect)
       .function("refImageBytes", &Screen::ref_image_bytes)

@@ -81,7 +81,7 @@ struct Gradient {
       return start_depth <= depth && depth < start_depth + length;
    }
 
-   uint32_t get_color(uint32_t depth) {
+   uint32_t get_color_abgr(uint32_t depth) {
       uint32_t col = depth - start_depth;
       float fraction = float(col) / length;
 
@@ -92,6 +92,17 @@ struct Gradient {
       return res;
    }
 
+   uint32_t get_color_rgb(uint32_t depth) {
+      uint32_t col = depth - start_depth;
+      float fraction = float(col) / length;
+
+      uint32_t res = 0;
+      res |= (uint32_t(r_delta * fraction + r_fr) & 0xff) << R_RGB_SHIFT;
+      res |= (uint32_t(g_delta * fraction + g_fr) & 0xff) << G_RGB_SHIFT;
+      res |= (uint32_t(b_delta * fraction + b_fr) & 0xff) << B_RGB_SHIFT;
+      return res;
+   }
+   
    int32_t r_delta;
    int32_t g_delta;
    int32_t b_delta;
@@ -115,7 +126,6 @@ struct ColorMapper {
    void set_flags(string flags) {
       cycle = flags.find("cycle") != string::npos;
       wrap = flags.find("wrap") != string::npos;
-      stretch = flags.find("stretch") != string::npos;
    }
 
    void remove_gradients() {
@@ -131,7 +141,25 @@ struct ColorMapper {
       gradients.push_back(gradient);
    }
 
-   uint32_t get_color(uint32_t x, uint32_t y, uint32_t depth, int32_t time_ms) {
+   uint32_t get_color_rgb(uint32_t depth) {
+      if (gradients.empty()) {
+         return 0x000000;
+      }
+
+      if (wrap) {
+         depth = depth % gradients.back().end();
+      }
+      
+      for (auto i = gradients.begin(); i != gradients.end(); ++i) {
+         if (i->in_range(depth)) {
+            return i->get_color_rgb(depth);
+         }
+      }
+      return 0x000000;
+      
+   }
+   
+   uint32_t get_color_abgr(uint32_t x, uint32_t y, uint32_t depth, int32_t time_ms) {
       if (depth >= INFINITE) {
          switch (depth) {
             case NOT_CALCULATED: return ((x >> 3) & 1) == ((y >> 3) & 1) ? 0xff080808 : 0xff181818;
@@ -155,14 +183,15 @@ struct ColorMapper {
       
       for (auto i = gradients.begin(); i != gradients.end(); ++i) {
          if (i->in_range(depth)) {
-            return i->get_color(depth);
+            return i->get_color_abgr(depth);
          }
       }
       return pulse_col32(0x00ff00, time_ms);
    }
    
-   bool cycle; // TODO
+   bool cycle;  // TODO
    bool wrap;
-   bool stretch; // TODO
    vector<Gradient> gradients;
 };
+
+   
