@@ -29,8 +29,8 @@ struct Screen {
       image = new uint32_t[y_size * x_size];
    }
 
-   void set_flags(std::string flags) {
-      color_mapper.set_flags(flags);
+   void set_cycle_interval(uint32_t cycle_interval) {
+      color_mapper.set_cycle_interval(cycle_interval);
    }
 
    void remove_gradients() {
@@ -50,8 +50,8 @@ struct Screen {
       }
    }
 
-   uint32_t get_color_rgb(uint32_t depth) {
-      return color_mapper.get_color_rgb(depth);
+   uint32_t get_color_rgb(uint32_t depth, int32_t time_ms) {
+      return color_mapper.get_color_rgb(depth, time_ms);
    }
    
    void fill_rect(uint32_t x_start, uint32_t x_delta, uint32_t y_start, uint32_t y_delta, uint32_t depth) {

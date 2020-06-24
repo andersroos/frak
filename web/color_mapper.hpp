@@ -123,9 +123,8 @@ struct ColorMapper {
 
    ColorMapper() {}
 
-   void set_flags(string flags) {
-      cycle = flags.find("cycle") != string::npos;
-      wrap = flags.find("wrap") != string::npos;
+   void set_cycle_interval(uint32_t cycle_interval) {
+      this->cycle_interval = cycle_interval;
    }
 
    void remove_gradients() {
@@ -137,19 +136,25 @@ struct ColorMapper {
       if (not gradients.empty()) {
          end = gradients.back().end();
       }
-      Gradient gradient(end, count + 1, rgb_fr, rgb_to);
+      Gradient gradient(end, count, rgb_fr, rgb_to);
       gradients.push_back(gradient);
    }
+   
+   uint32_t constrain_depth(uint32_t depth, int32_t time_ms) {
+      if (cycle_interval != 0) {
+         depth = depth + uint32_t(float(time_ms) / cycle_interval);
+      }
 
-   uint32_t get_color_rgb(uint32_t depth) {
+      return depth % gradients.back().end();
+   }
+   
+   uint32_t get_color_rgb(uint32_t depth, int32_t time_ms) {
       if (gradients.empty()) {
-         return 0x000000;
+         return  0x000000;
       }
 
-      if (wrap) {
-         depth = depth % gradients.back().end();
-      }
-      
+      depth = constrain_depth(depth, time_ms);
+
       for (auto i = gradients.begin(); i != gradients.end(); ++i) {
          if (i->in_range(depth)) {
             return i->get_color_rgb(depth);
@@ -171,15 +176,11 @@ struct ColorMapper {
          }
       }
 
-      // Hardcoded spec.
-
       if (gradients.empty()) {
          return fail_color(time_ms);
       }
 
-      if (wrap) {
-         depth = depth % gradients.back().end();
-      }
+      depth = constrain_depth(depth, time_ms);
       
       for (auto i = gradients.begin(); i != gradients.end(); ++i) {
          if (i->in_range(depth)) {
@@ -189,8 +190,7 @@ struct ColorMapper {
       return pulse_col32(0x00ff00, time_ms);
    }
    
-   bool cycle;  // TODO
-   bool wrap;
+   uint32_t cycle_interval;
    vector<Gradient> gradients;
 };
 

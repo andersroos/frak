@@ -25,6 +25,7 @@ export default class Gui {
 
     paint(statistics) {
         const elapsed = this.core.getElapsedTime();
+        const time = Math.floor(performance.now());
     
         this.elapsed.textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
         document.getElementById("weight").textContent = formatFloat(statistics.infiniteCount * this.core.max_n + statistics.sumDepth, {human: true, dec: 4, padTo: 9});
@@ -34,7 +35,10 @@ export default class Gui {
         for (let i = 0; i < HISTOGRAM_SIZE; ++i) {
             const e = document.getElementById(`histogram${i}`);
             e.setAttribute("width", statistics.histogram.get(i) * 200 / statistics.histogramMaxValue || 0);
-            e.setAttribute("fill", "#" + formatInt(this.screen.screen.getColorRgb(statistics.minDepth + (statistics.histogramBucketSize || 0) * i), {base: 16, padTo: 6, padChar: '0'}));
+            e.setAttribute("fill", "#" + formatInt(
+                this.screen.screen.getColorRgb(statistics.minDepth + (statistics.histogramBucketSize || 0) * i, time),
+                {base: 16, padTo: 6, padChar: '0'}
+            ));
         }
         document.getElementById("min-depth").textContent = format(statistics.minDepth);
         document.getElementById("max-depth").textContent = format(statistics.maxDepth);

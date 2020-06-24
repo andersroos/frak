@@ -21,7 +21,7 @@ EMSCRIPTEN_BINDINGS(corelib) {
 
    emscripten::class_<Screen>("Screen")
       .constructor<uint32_t, uint32_t>()
-      .function("setFlags", &Screen::set_flags)
+      .function("setCycleInterval", &Screen::set_cycle_interval)
       .function("removeGradients", &Screen::remove_gradients)
       .function("addGradient", &Screen::add_gradient)
       .function("paint", &Screen::paint)

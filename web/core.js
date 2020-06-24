@@ -17,36 +17,35 @@ export default class Core {
 
         this.max_n = 256 * 1024;
         
-        // Nice slow area:
-        this.x0_start = 0.01311636238095419;
-        this.x0_delta = 5.5964300526380535e-15;
-        this.y0_start = 0.6325883646614131;
-        this.y0_delta = 5.5964300526380535e-15;
+        // // Nice slow area:
+        // this.x0_start = 0.01311636238095419;
+        // this.x0_delta = 5.5964300526380535e-15;
+        // this.y0_start = 0.6325883646614131;
+        // this.y0_delta = 5.5964300526380535e-15;
         
-        // // Broken histogram:
-        // this.x0_start = 0.40286747167707915;
-        // this.x0_delta = 1.4672303879337928e-11;
-        // this.y0_start = -0.3501103227933188;
-        // this.y0_delta = 1.4672303879337928e-11;
+        // Broken histogram:
+        this.x0_start = 0.40286747167707915;
+        this.x0_delta = 1.4672303879337928e-11;
+        this.y0_start = -0.3501103227933188;
+        this.y0_delta = 1.4672303879337928e-11;
         
         // // Full:
         // this.x0_start = -2;
         // this.x0_delta = 4 / X_SIZE;
         // this.y0_start = -2;
         // this.y0_delta = 4 / Y_SIZE;
+        
+        this.colors.parse("00ff00-#16-ffffff-#128-ff0000-#128-00ff00");
 
         this.lastEvent = performance.now();
         
         const paint = () => {
-            if (this.lastEvent + 30000 < performance.now()) {
-                // Stop animating after 30s of no events.
-                return;
+            if (performance.now() < this.lastEvent + 30000) {
+                const statistics = this.screen.getStatistics();
+                this.colors.setScreenColors(statistics.minDepth || 0, statistics.maxDepth || 0, statistics.histogram || 0, statistics.histogramBucketSize || 0);
+                this.screen.paint();
+                this.gui.paint(statistics);
             }
-
-            const statistics = this.screen.getStatistics();
-            this.colors.setScreenColors(statistics.minDepth || 0, statistics.maxDepth || 0, statistics.histogram || 0, statistics.histogramBucketSize || 0);
-            this.screen.paint();
-            this.gui.paint(statistics);
             requestAnimationFrame(paint);
         };
         paint();
