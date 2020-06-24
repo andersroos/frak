@@ -1,19 +1,7 @@
 <!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
-  <style type="text/css">
-    @font-face {
-      font-family: 'LCDM2N';
-      src: url('./fonts/LCDM2N.eot');
-      src: local('LCDM2N'), url('./fonts/LCDM2N.woff') format('woff'), url('./fonts/LCDM2N.ttf') format('truetype');
-    }
-    p {
-      margin: 4px 0;
-    }
-    .pre {
-      white-space: pre;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css"/>
   <script type="module" src="main.js"></script>
   <script>
       Promise.all([
@@ -24,10 +12,10 @@
   <script src="corelib.js"></script>
   <title>Frak</title>
 </head>
-<body style="background: #000; color: #0f0; font-family: LCDM2N,monospace; min-width: 1024px;">
+<body>
   <div>
-    <canvas id="canvas" style="background: #010; width: 768px; height: 768px;"></canvas>
-    <div style="display: inline-block; margin-left: 8px; vertical-align: top; max-width: 212px">
+    <canvas id="canvas"></canvas>
+    <div class="controls">
       <p class="pre" style="margin-bottom: 4px;">ELAPSED       <span id="elapsed"></span> S</p>
       <p class="pre" style="margin-bottom: 10px;" title="weight: sum of depth in all points">WEIGHT        <span id="weight"></span></p>
       <p class="pre">MIN_DEPTH <span id="min-depth"></span></p>
@@ -36,8 +24,8 @@
       <p class="pre"><span id="histogram-info"></span></p>
       <svg id="histogram">
       </svg>
-      <p class="pre"><label for="cycle-time">CYCLE TIME</label><select id="cycle-time"><option>0</option><option>1</option></select></p>
-      <p class="pre"><label for="color-scaling">COLOR SCALING</label><select id="color-scaling"><option>0</option><option>1</option></select></p>
+      <p class="pre wheel-select" title="cycle the colors, scroll to change" id="color-cycle">COLOR CYCLE     <span class="value"></span></p>
+      <p class="pre wheel-select" title="scale the color range to at least span this amount of pixels, scroll to change" id="color-scaling">COLOR SCALING   <span class="value"></span></p>
     </div>
   </div>
 </body>

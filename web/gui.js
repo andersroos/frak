@@ -2,6 +2,40 @@ import {formatInt} from "./util";
 
 const HISTOGRAM_SIZE = 128;
 
+class WheelSelectLocalStorage {
+    
+    constructor(key, values, onSelect) {
+        this.key = key;
+        this.values = values;
+        this.selected = Number.parseInt(localStorage.getItem(key)) || 0;
+        this.onSelect = onSelect;
+
+        const element = document.getElementById(key);
+        element.onwheel = this.onWheel.bind(this);
+        
+        this.value = element.getElementsByClassName("value")[0];
+        
+        this.onSelectedChanged();
+    }
+    
+    onWheel(event) {
+        if (event.deltaY > 0) {
+            this.selected = Math.max(0, this.selected - 1);
+        }
+        else {
+            this.selected = Math.min(this.selected + 1, this.values.length - 1);
+        }
+        this.onSelectedChanged()
+    }
+    
+    onSelectedChanged() {
+        const value = this.values[this.selected];
+        this.value.textContent = value.label;
+        localStorage.setItem(this.key, this.selected.toString());
+        this.onSelect(value.value);
+    }
+}
+
 export default class Gui {
     
     constructor(core, screen) {
@@ -21,7 +55,37 @@ export default class Gui {
             rect.setAttribute("fill", "#00ff00");
             svg.appendChild(rect);
         }
-    }
+
+        this.colorSelect = new WheelSelectLocalStorage(
+            'color-cycle',
+            [
+                {value: 0,  label: ' OFF'},
+                {value: 10, label: '10 S'},
+                {value: 6,  label: ' 6 S'},
+                {value: 4,  label: ' 4 S'},
+                {value: 2,  label: ' 2 S'},
+                {value: 1,  label: ' 1 S'},
+            ],
+            v => {
+                this.core.colors.setCycleTime(v * 1000);
+                this.core.onEvent();
+            }
+        );
+
+        this.colorScaling = new WheelSelectLocalStorage(
+            'color-scaling',
+            [
+                {value: 0,  label: ' OFF'},
+                {value: 10, label: ' 50%'},
+                {value: 6,  label: ' 90%'},
+                {value: 4,  label: ' 99.9%'},
+                {value: 2,  label: ' ALL'},
+            ],
+            v => {
+                this.core.onEvent();
+            }
+        );
+}
 
     paint(statistics) {
         const elapsed = this.core.getElapsedTime();

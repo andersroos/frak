@@ -19,6 +19,10 @@ export default class Colors {
         this.gradientsSize = 0;
     }
     
+    setCycleTime(cycleTime) {
+        this.cycleTime = cycleTime;
+    }
+    
     setScreenColors(minDepth, maxDepth, histogram, histogramBucketSize) {
         this.screen.removeGradients();
         let multiple = 1.0;
