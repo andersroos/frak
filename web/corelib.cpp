@@ -24,6 +24,7 @@ EMSCRIPTEN_BINDINGS(corelib) {
       .function("setCycleInterval", &Screen::set_cycle_interval)
       .function("removeGradients", &Screen::remove_gradients)
       .function("addGradient", &Screen::add_gradient)
+      .function("setColorOffset", &Screen::set_color_offset)
       .function("paint", &Screen::paint)
       .function("getColorRgb", &Screen::get_color_rgb)
       .function("clear", &Screen::clear)

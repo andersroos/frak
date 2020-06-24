@@ -33,6 +33,10 @@ struct Screen {
       color_mapper.set_cycle_interval(cycle_interval);
    }
 
+   void set_color_offset(uint32_t color_offset) {
+      color_mapper.set_color_offset(color_offset);
+   }
+   
    void remove_gradients() {
       color_mapper.remove_gradients();
    }

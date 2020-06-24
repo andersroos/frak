@@ -127,6 +127,10 @@ struct ColorMapper {
       this->cycle_interval = cycle_interval;
    }
 
+   void set_color_offset(uint32_t color_offset) {
+      this->color_offset = color_offset;
+   }
+   
    void remove_gradients() {
       gradients.clear();
    }
@@ -141,6 +145,8 @@ struct ColorMapper {
    }
    
    uint32_t constrain_depth(uint32_t depth, int32_t time_ms) {
+      depth = depth - color_offset;
+      
       if (cycle_interval != 0) {
          depth = depth + uint32_t(float(time_ms) / cycle_interval);
       }
@@ -189,7 +195,8 @@ struct ColorMapper {
       }
       return pulse_col32(0x00ff00, time_ms);
    }
-   
+
+   uint32_t color_offset;
    uint32_t cycle_interval;
    vector<Gradient> gradients;
 };

@@ -1,19 +1,18 @@
 import {formatInt} from "./util";
-
-const HISTOGRAM_SIZE = 128;
+import {HISTOGRAM_SIZE} from "./dimensions";
 
 class WheelSelectLocalStorage {
     
-    constructor(key, values, onSelect) {
+    constructor(key, options, onSelect) {
         this.key = key;
-        this.values = values;
+        this.options = options;
         this.selected = Number.parseInt(localStorage.getItem(key)) || 0;
         this.onSelect = onSelect;
 
         const element = document.getElementById(key);
         element.onwheel = this.onWheel.bind(this);
         
-        this.value = element.getElementsByClassName("value")[0];
+        this.element = element.getElementsByClassName("value")[0];
         
         this.onSelectedChanged();
     }
@@ -23,16 +22,16 @@ class WheelSelectLocalStorage {
             this.selected = Math.max(0, this.selected - 1);
         }
         else {
-            this.selected = Math.min(this.selected + 1, this.values.length - 1);
+            this.selected = Math.min(this.selected + 1, this.options.length - 1);
         }
         this.onSelectedChanged()
     }
     
     onSelectedChanged() {
-        const value = this.values[this.selected];
-        this.value.textContent = value.label;
+        const option = this.options[this.selected];
+        this.element.textContent = option.label;
         localStorage.setItem(this.key, this.selected.toString());
-        this.onSelect(value.value);
+        this.onSelect(option.value);
     }
 }
 
@@ -75,13 +74,27 @@ export default class Gui {
         this.colorScaling = new WheelSelectLocalStorage(
             'color-scaling',
             [
-                {value: 0,  label: ' OFF'},
-                {value: 10, label: ' 50%'},
-                {value: 6,  label: ' 90%'},
-                {value: 4,  label: ' 99.9%'},
-                {value: 2,  label: ' ALL'},
+                {value: 0,     label: ' OFF'},
+                {value: 0.6,   label: ' 60.0%'},
+                {value: 0.8,   label: ' 80.0%'},
+                {value: 0.9,   label: ' 90.0%'},
+                {value: 0.94,  label: ' 94.0%'},
+                {value: 0.98,  label: ' 98.0%'},
+                {value: 0.99,  label: ' 99.0%'},
+                {value: 0.991, label: ' 99.1%'},
+                {value: 0.992, label: ' 99.2%'},
+                {value: 0.993, label: ' 99.3%'},
+                {value: 0.994, label: ' 99.4%'},
+                {value: 0.996, label: ' 99.6%'},
+                {value: 0.998, label: ' 99.8%'},
+                {value: 0.999, label: ' 99.9%'},
+                {value: 1.0,   label: '100.0%'},
+                {value: 1.1,   label: '110.0%'},
+                {value: 1.2,   label: '120.0%'},
+                {value: 1.4,   label: '140.0%'},
             ],
             v => {
+                this.core.colors.setScaleRatio(v);
                 this.core.onEvent();
             }
         );
