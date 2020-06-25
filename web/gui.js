@@ -129,8 +129,6 @@ export default class Gui {
         
         // Elapsed.
         
-        this.elapsed = document.getElementById('elapsed');
-        
         // Histogram.
         
         const svg = document.getElementById('histogram');
@@ -214,12 +212,7 @@ export default class Gui {
         this.lastEvent = performance.now();
     }
     
-    paint(statistics) {
-        const startTime = performance.now();
-        const time = Math.floor(startTime);
-
-        // Canvas.
-        
+    paintCanvas(time) {
         this.screen.paint(time);
         this.context.putImageData(this.imageData, 0, 0);
         
@@ -242,12 +235,12 @@ export default class Gui {
                 this.context.fillRect(hover.x, 0, 1, Y_SIZE);
             }
         }
+    }
 
-        // Statistics and histogram.
-        
+    paintStatistics(time, statistics) {
         const elapsed = this.core.getElapsedTime();
-    
-        this.elapsed.textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
+        document.getElementById('elapsed').textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
+        
         document.getElementById("weight").textContent = formatFloat(statistics.infiniteCount * this.core.max_n + statistics.sumDepth, {human: true, dec: 4, padTo: 9});
         
         const format = number => formatInt(number, {space: 3, padTo: 9});
@@ -268,6 +261,14 @@ export default class Gui {
         const bucketSize = formatFloat(statistics.histogramBucketSize || 0, {dec: 1});
         const maxValue = formatInt(statistics.histogramMaxValue, {});
         document.getElementById("histogram-info").textContent = `${percentage}% - ${bucketSize} - ${maxValue}`;
+    }
+    
+    paint(statistics) {
+        const startTime = performance.now();
+        const time = Math.floor(startTime);
+        
+        this.paintCanvas(time);
+        this.paintStatistics(time, statistics);
         
         this.paintTime += performance.now() - startTime;
         this.paintCount++;
