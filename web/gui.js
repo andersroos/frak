@@ -69,6 +69,36 @@ class MouseState {
     }
 }
 
+class WheelMaxNLocalStorage {
+    constructor(key, onChange) {
+        this.key = key;
+        this.value = Number.parseInt(localStorage.getItem(key)) || 64;
+        this.onChange = onChange;
+
+        const element = document.getElementById(key);
+        element.onwheel = this.onWheel.bind(this);
+        
+        this.element = element.getElementsByClassName("value")[0];
+        
+        this.onValueChanged();
+    }
+    
+    onWheel(event) {
+        if (event.deltaY > 0) {
+            this.value *= 0.5;
+        }
+        else {
+            this.value  *= 2;
+        }
+        this.onValueChanged()
+    }
+    
+    onValueChanged() {
+        this.element.textContent = formatInt(this.value, {padTo: 12, space: 3});
+        localStorage.setItem(this.key, this.value.toString());
+        this.onChange(this.value);
+    }
+}
 
 class WheelSelectLocalStorage {
     
@@ -127,7 +157,11 @@ export default class Gui {
         // TODO Rename.
         this.mouseState = new MouseState(this.context.canvas, () => this.onMouseEvent(), (start, end) => this.onMouseRect(start, end));
         
-        // Elapsed.
+        // Max n.
+        this.max_n = new WheelMaxNLocalStorage('max-n', v => {
+            this.core.setMaxN(v);
+            this.core.start();
+        });
         
         // Histogram.
         
@@ -255,7 +289,6 @@ export default class Gui {
         }
         document.getElementById("min-depth").textContent = format(statistics.minDepth);
         document.getElementById("max-depth").textContent = format(statistics.maxDepth);
-        document.getElementById("max-n").textContent = format(this.core.max_n);
         
         const percentage = formatFloat((statistics.histogramCount / statistics.count * 100 || 0), {dec: 2});
         const bucketSize = formatFloat(statistics.histogramBucketSize || 0, {dec: 1});

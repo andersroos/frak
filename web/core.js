@@ -14,19 +14,28 @@ export default class Core {
         this.dispatcher.postMessage({op: CONFIGURE, worker_count: 24});
     }
     
-    start(x0_start, x0_delta, y0_start, y0_delta, max_n=0) {
+    setMaxN(max_n) {
+        this.max_n = max_n;
+    }
+    
+    setCoordinates(x0_start, x0_delta, y0_start, y0_delta) {
+        this.x0_start = x0_start;
+        this.x0_delta = x0_delta;
+        this.y0_start = y0_start;
+        this.y0_delta = y0_delta;
+    }
+    
+    start() {
+        if (this.max_n === undefined || this.x0_start === undefined) {
+            return;
+        }
+        
         this.interrupt();
-        this.screen.clear();
         this.id = Date.now();
         
         this.startTime = performance.now();
         this.endTime = null;
 
-        this.max_n = max_n || this.max_n;
-        this.x0_start = x0_start;
-        this.x0_delta = x0_delta;
-        this.y0_start = y0_start;
-        this.y0_delta = y0_delta;
         console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n);
         
         this.dispatcher.postMessage({
@@ -59,12 +68,14 @@ export default class Core {
     
     zoom(x, y, x_size, y_size) {
         console.info("zooming", x, y, x_size, y_size);
-        const x0_start = this.x0_start + x * this.x0_delta;
-        const x0_delta = this.x0_delta * x_size / X_SIZE;
-        const y0_start = this.y0_start + y * this.y0_delta;
-        const y0_delta = this.y0_delta * y_size / Y_SIZE;
-        
-        this.start(x0_start, x0_delta, y0_start, y0_delta);
+        this.setCoordinates(
+            this.x0_start + x * this.x0_delta,
+            this.x0_delta * x_size / X_SIZE,
+            this.y0_start + y * this.y0_delta,
+            this.y0_delta * y_size / Y_SIZE
+        );
+        this.screen.clear();
+        this.start();
     }
 
     onFinished() {
