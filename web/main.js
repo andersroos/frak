@@ -14,21 +14,21 @@ window.init = () => {
     // core.colors.parse("000044-#32-0000ff-#64-ffff00-#64-ffffff");
     core.gui.colors.parse("9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3");
 
-    // Full.
-    core.setCoordinates(
-        -2,
-        4 / X_SIZE,
-        -2,
-        4 / Y_SIZE,
-    );
+    // // Full.
+    // core.setCoordinates(
+    //     -2,
+    //     4 / X_SIZE,
+    //     -2,
+    //     4 / Y_SIZE,
+    // );
     
-    // "Broken" histogram.
-    core.setCoordinates(
-        0.40286747167707915,
-        1.4672303879337928e-11,
-        -0.3501103227933188,
-        1.4672303879337928e-11,
-    );
+    // // "Broken" histogram.
+    // core.setCoordinates(
+    //     0.40286747167707915,
+    //     1.4672303879337928e-11,
+    //     -0.3501103227933188,
+    //     1.4672303879337928e-11,
+    // );
 
     // Nice slow area.
     core.setCoordinates(
@@ -39,5 +39,6 @@ window.init = () => {
     );
 
     core.start();
+    core.gui.colorScalingInput.set(1);
 };
 

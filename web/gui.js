@@ -1,6 +1,9 @@
 import {formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
-import Colors, {CALCULATING} from "./colors";
+import Colors from "./colors";
+
+const SQRT_2 = Math.sqrt(2);
+const QBRT_2 = Math.pow(2, 1/3);
 
 const asRectWithAspectRatio = (first, second, ratio) => {
     // Always keep th first point fixed and alter the second.
@@ -102,9 +105,9 @@ class ValueWheelLocalStorage {
     }
 }
 
-class WheelSelectLocalStorage {
+class OptionWheelLocalStorage {
     
-    constructor(key, options, onSelect) {
+    constructor({key, options, onSelect}) {
         this.key = key;
         this.options = options;
         this.selected = Number.parseInt(localStorage.getItem(key)) || 0;
@@ -174,72 +177,94 @@ export default class Gui {
         }
         
         // Max n.
+        
         this.maxNInput = new ValueWheelLocalStorage({
             key: 'max-n',
             onChange: v => {
-                this.core.setMaxN(v);
+                this.core.setMaxN(Math.round(v));
                 this.core.start();
             },
-            newValue: (v, direction) => direction ? Math.max(1, v / 2) : v * 2,
+            newValue: (v, direction) => direction ? Math.max(1, v / QBRT_2) : v * QBRT_2,
             formatValue: v => formatInt(v, {padTo: 12, space: 3}),
             defaultValue: 64
         });
         
         // Color cycle.
-        this.colorCycle = new WheelSelectLocalStorage(
-            'color-cycle',
-            [
-                {value: 0,  label: ' OFF'},
+        
+        this.colorCycleInput = new OptionWheelLocalStorage({
+            key: 'color-cycle',
+            options: [
+                {value: 0,  label: 'OFF'},
                 {value: 10, label: '10 S'},
-                {value: 6,  label: ' 6 S'},
-                {value: 4,  label: ' 4 S'},
-                {value: 2,  label: ' 2 S'},
-                {value: 1,  label: ' 1 S'},
+                {value: 6,  label: '6 S'},
+                {value: 4,  label: '4 S'},
+                {value: 2,  label: '2 S'},
+                {value: 1,  label: '1 S'},
             ],
-            v => {
+            onSelect: v => {
                 this.colors.setCycleTime(v * 1000);
                 this.onEvent();
             }
-        );
+        });
         
         // Color scaling.
-        this.colorScaling = new WheelSelectLocalStorage(
-            'color-scaling',
-            [
-                {value: 0,     label: ' OFF'},
-                {value: 0.2,   label: ' 20.0%'},
-                {value: 0.4,   label: ' 40.0%'},
-                {value: 0.6,   label: ' 60.0%'},
-                {value: 0.8,   label: ' 80.0%'},
-                {value: 0.9,   label: ' 90.0%'},
-                {value: 0.94,  label: ' 94.0%'},
-                {value: 0.98,  label: ' 98.0%'},
-                {value: 0.99,  label: ' 99.0%'},
-                {value: 0.991, label: ' 99.1%'},
-                {value: 0.992, label: ' 99.2%'},
-                {value: 0.993, label: ' 99.3%'},
-                {value: 0.994, label: ' 99.4%'},
-                {value: 0.996, label: ' 99.6%'},
-                {value: 0.998, label: ' 99.8%'},
-                {value: 0.999, label: ' 99.9%'},
-                {value: 1.0,   label: '100.0%'},
-                {value: 1.1,   label: '110.0%'},
-                {value: 1.2,   label: '120.0%'},
-                {value: 1.4,   label: '140.0%'},
-            ],
-            v => {
-                this.colors.setScaleRatio(v);
+        
+        this.colorScalingInput = new ValueWheelLocalStorage({
+            key: 'color-scaling',
+            onChange: v => {
+                this.colors.setScaleMultiple(v);
                 this.onEvent();
-            }
-        );
+            },
+            newValue: (v, direction) => direction ? v / QBRT_2 : v * QBRT_2,
+            formatValue: v => {
+                if (v === 1) {
+                    return "OFF";
+                }
+                if (v < 1) {
+                    const inv = 1/v;
+                    if (inv < 4) {
+                        return "1/" + formatFloat(inv, {dec: 1});
+                    }
+                    return "1/" + formatInt(inv, {});
+                }
+                if (v < 4) {
+                    return formatFloat(v, {dec: 1});
+                }
+                return formatInt(v, {});
+            },
+            defaultValue: 1
+        });
 
+        // Color offset.
+        
+        this.colorOffsetImput = new OptionWheelLocalStorage({
+            key: 'color-offset',
+            onSelect: v => {
+                this.colors.setColorOffset(v);
+                this.onEvent();
+            },
+            options: [
+                {value: 0,    label: 'OFF'},
+                {value: 0.1,  label: '10%'},
+                {value: 0.2,  label: '20%'},
+                {value: 0.3,  label: '30%'},
+                {value: 0.4,  label: '40%'},
+                {value: 0.5,  label: '50%'},
+                {value: 0.6,  label: '60%'},
+                {value: 0.7,  label: '70%'},
+                {value: 0.8,  label: '80%'},
+                {value: 0.9,  label: '90%'},
+                {value: 1,    label: 'MIN_DEPTH'},
+            ]
+        });
+        
         // Setup paint loop.
         
         this.lastEvent = performance.now();
         const paint = () => {
             if (performance.now() < this.lastEvent + 30000) {
                 const statistics = this.screen.getStatistics();
-                this.colors.setScreenColors(statistics);
+                this.colors.setScreenColors(statistics.minDepth);
                 this.paint(statistics);
             }
             requestAnimationFrame(paint);

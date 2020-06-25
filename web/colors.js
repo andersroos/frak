@@ -1,10 +1,7 @@
-import {HISTOGRAM_SIZE} from "./dimensions";
-
 export const CALCULATING =    0xfffffffe;
 export const INFINITE =       0xfffffffb;
 
 class Gradient {
-
     constructor(from, to, count) {
         this.from = from;
         this.to = to;
@@ -15,8 +12,9 @@ class Gradient {
 export default class Colors {
     constructor(screen) {
         this.screen = screen;
-        this.scaleRatio = 0;
+        this.scaleMultiple = 1;
         this.cycleTime = 0;
+        this.offset = 0;
         this.gradients = [];
         this.gradientsSize = 0;
     }
@@ -26,52 +24,34 @@ export default class Colors {
         this.cycleTime = cycleTime;
     }
     
-    // Scale colors so that at most ratio of all pixels are included in gradients, 0 means don't scale gradients.
-    setScaleRatio(ratio) {
-        this.scaleRatio = ratio;
+    setColorOffset(offset) {
+        this.offset = offset;
     }
     
-    setScreenColors({minDepth, maxDepth, histogram, histogramBucketSize, histogramCount, count}) {
+    setScaleMultiple(multiple) {
+        this.scaleMultiple = multiple;
+    }
+    
+    setScreenColors(minDepth) {
         this.screen.removeGradients();
         
-        let multiple = 1.0;
-        if (this.scaleRatio && count > 0) {
-            let index = 0;
-            let countAtIndex = 0;
-            while (true) {
-                if (count * this.scaleRatio < countAtIndex) {
-                    multiple = histogramBucketSize * index / this.gradientsSize;
-                    break;
-                }
-                
-                if (index >= HISTOGRAM_SIZE) {
-                    // Histogram does not contain everything, linear extrapolate from end of histogram.
-                    if (this.scaleRatio >= 1) {
-                        multiple = this.scaleRatio * (maxDepth - minDepth) / this.gradientsSize;
-                    }
-                    else {
-                        const startRatio = histogramCount / count;
-                        const depthSpan = maxDepth / (1.0 - startRatio) * (this.scaleRatio - startRatio) - minDepth;
-                        multiple = depthSpan / this.gradientsSize;
-                    }
-                    break;
-                }
-
-                countAtIndex += histogram.get(index);
-                ++index;
-            }
-        }
-
-        this.screen.setColorOffset(this.scaleRatio === 0 ? 0 : minDepth);
-        
         this.gradients.forEach(gradient => {
-            this.screen.addGradient(gradient.from, Math.max(1, Math.round(gradient.count * multiple)), gradient.to);
+            this.screen.addGradient(gradient.from, Math.max(1, Math.round(gradient.count * this.scaleMultiple)), gradient.to);
         });
 
         // Calculate cycle time based on stretched gradient.
-        const number = this.cycleTime / (multiple * this.gradientsSize);
-        // console.info("cycle interval", number);
-        this.screen.setCycleInterval(number);
+        this.screen.setCycleInterval(this.cycleTime / (this.scaleMultiple * this.gradientsSize));
+        
+        if (this.offset === 0) {
+            this.screen.setColorOffset(0);
+        }
+        else if (this.offset < 1) {
+            this.screen.setColorOffset(Math.floor(this.scaleMultiple * this.gradientsSize * this.offset));
+        }
+        else {
+            this.screen.setColorOffset(minDepth)
+        }
+        
     }
     
     parse(str) {
