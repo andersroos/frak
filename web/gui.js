@@ -69,11 +69,13 @@ class MouseState {
     }
 }
 
-class WheelMaxNLocalStorage {
-    constructor(key, onChange) {
+class ValueWheelLocalStorage {
+    constructor({key, onChange, newValue, formatValue, defaultValue}) {
         this.key = key;
-        this.value = Number.parseInt(localStorage.getItem(key)) || 64;
+        this.value = Number.parseFloat(localStorage.getItem(key)|| defaultValue);
         this.onChange = onChange;
+        this.newValue = newValue;
+        this.formatValue = formatValue;
 
         const element = document.getElementById(key);
         element.onwheel = this.onWheel.bind(this);
@@ -83,18 +85,18 @@ class WheelMaxNLocalStorage {
         this.onValueChanged();
     }
     
+    set(value) {
+        this.value = value;
+        this.onValueChanged();
+    }
+    
     onWheel(event) {
-        if (event.deltaY > 0) {
-            this.value *= 0.5;
-        }
-        else {
-            this.value  *= 2;
-        }
+        this.value = this.newValue(this.value, event.deltaY > 0);
         this.onValueChanged()
     }
     
     onValueChanged() {
-        this.element.textContent = formatInt(this.value, {padTo: 12, space: 3});
+        this.element.textContent = this.formatValue(this.value);
         localStorage.setItem(this.key, this.value.toString());
         this.onChange(this.value);
     }
@@ -157,12 +159,6 @@ export default class Gui {
         // TODO Rename.
         this.mouseState = new MouseState(this.context.canvas, () => this.onMouseEvent(), (start, end) => this.onMouseRect(start, end));
         
-        // Max n.
-        this.max_n = new WheelMaxNLocalStorage('max-n', v => {
-            this.core.setMaxN(v);
-            this.core.start();
-        });
-        
         // Histogram.
         
         const svg = document.getElementById('histogram');
@@ -177,8 +173,19 @@ export default class Gui {
             svg.appendChild(rect);
         }
         
+        // Max n.
+        this.maxNInput = new ValueWheelLocalStorage({
+            key: 'max-n',
+            onChange: v => {
+                this.core.setMaxN(v);
+                this.core.start();
+            },
+            newValue: (v, direction) => direction ? Math.max(1, v / 2) : v * 2,
+            formatValue: v => formatInt(v, {padTo: 12, space: 3}),
+            defaultValue: 64
+        });
+        
         // Color cycle.
-
         this.colorCycle = new WheelSelectLocalStorage(
             'color-cycle',
             [
@@ -196,7 +203,6 @@ export default class Gui {
         );
         
         // Color scaling.
-
         this.colorScaling = new WheelSelectLocalStorage(
             'color-scaling',
             [
