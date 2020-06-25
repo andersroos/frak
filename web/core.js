@@ -16,11 +16,12 @@ export default class Core {
         this.dispatcher.postMessage({op: CONFIGURE, worker_count: 24});
 
         this.max_n = 256 * 1024;
-        // Nice slow area:
-        this.x0_start = 0.01311636238095419;
-        this.x0_delta = 5.5964300526380535e-15;
-        this.y0_start = 0.6325883646614131;
-        this.y0_delta = 5.5964300526380535e-15;
+
+        // // Nice slow area:
+        // this.x0_start = 0.01311636238095419;
+        // this.x0_delta = 5.5964300526380535e-15;
+        // this.y0_start = 0.6325883646614131;
+        // this.y0_delta = 5.5964300526380535e-15;
         
         // // Broken histogram:
         // this.x0_start = 0.40286747167707915;
@@ -28,13 +29,15 @@ export default class Core {
         // this.y0_start = -0.3501103227933188;
         // this.y0_delta = 1.4672303879337928e-11;
         
-        // // Full:
-        // this.x0_start = -2;
-        // this.x0_delta = 4 / X_SIZE;
-        // this.y0_start = -2;
-        // this.y0_delta = 4 / Y_SIZE;
+        // Full:
+        this.x0_start = -2;
+        this.x0_delta = 4 / X_SIZE;
+        this.y0_start = -2;
+        this.y0_delta = 4 / Y_SIZE;
         
-        this.colors.parse("00ff00-#90-ffffff-#90-ff0000-#90-00ff00");
+        // this.colors.parse("00ff00-#90-ffffff-#90-ff0000-#90-00ff00");
+        // this.colors.parse("000044-#32-0000ff-#64-ffff00-#64-ffffff");
+        this.colors.parse("9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3");
 
         this.lastEvent = performance.now();
         

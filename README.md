@@ -46,5 +46,4 @@ registry
 
 * Use higher precision in calculations.
 * Set max n.
-* Stretch color sequences.
 * Back/Undo for zoom (and other operations).
