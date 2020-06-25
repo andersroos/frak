@@ -29,7 +29,7 @@ struct Screen {
       image = new uint32_t[y_size * x_size];
    }
 
-   void set_cycle_interval(uint32_t cycle_interval) {
+   void set_cycle_interval(float cycle_interval) {
       color_mapper.set_cycle_interval(cycle_interval);
    }
 

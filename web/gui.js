@@ -75,6 +75,8 @@ export default class Gui {
             'color-scaling',
             [
                 {value: 0,     label: ' OFF'},
+                {value: 0.2,   label: ' 20.0%'},
+                {value: 0.4,   label: ' 40.0%'},
                 {value: 0.6,   label: ' 60.0%'},
                 {value: 0.8,   label: ' 80.0%'},
                 {value: 0.9,   label: ' 90.0%'},

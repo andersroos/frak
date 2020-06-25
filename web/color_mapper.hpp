@@ -123,7 +123,7 @@ struct ColorMapper {
 
    ColorMapper() {}
 
-   void set_cycle_interval(uint32_t cycle_interval) {
+   void set_cycle_interval(float cycle_interval) {
       this->cycle_interval = cycle_interval;
    }
 
@@ -197,7 +197,7 @@ struct ColorMapper {
    }
 
    uint32_t color_offset;
-   uint32_t cycle_interval;
+   float cycle_interval;
    vector<Gradient> gradients;
 };
 

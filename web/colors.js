@@ -50,12 +50,8 @@ export default class Colors {
                         multiple = this.scaleRatio * (maxDepth - minDepth) / this.gradientsSize;
                     }
                     else {
-                        const startDepth = minDepth + histogramBucketSize * HISTOGRAM_SIZE;
                         const startRatio = histogramCount / count;
-                        const maxRatio = 1;
-                        const depthPerRatio = (maxDepth - startDepth) / (maxRatio - startRatio);
-                        const endDepth = startDepth + depthPerRatio * (this.scaleRatio - startRatio);
-                        const depthSpan = endDepth - minDepth;
+                        const depthSpan = maxDepth / (1.0 - startRatio) * (this.scaleRatio - startRatio) - minDepth;
                         multiple = depthSpan / this.gradientsSize;
                     }
                     break;
@@ -65,7 +61,6 @@ export default class Colors {
                 ++index;
             }
         }
-        console.info(multiple, this.scaleRatio, this.gradientsSize);
 
         this.screen.setColorOffset(this.scaleRatio === 0 ? 0 : minDepth);
         
@@ -74,7 +69,9 @@ export default class Colors {
         });
 
         // Calculate cycle time based on stretched gradient.
-        this.screen.setCycleInterval(Math.floor(this.cycleTime / (multiple * this.gradientsSize)));
+        const number = this.cycleTime / (multiple * this.gradientsSize);
+        // console.info("cycle interval", number);
+        this.screen.setCycleInterval(number);
     }
     
     parse(str) {
