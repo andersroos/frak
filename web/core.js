@@ -1,15 +1,11 @@
 import {CONFIGURE, START, BLOCK_COMPLETE, FINISHED, BLOCK_STARTED, INTERRUPT} from './op';
 import {X_SIZE, Y_SIZE} from "./dimensions";
-import Screen from "./screen";
 import Gui from "./gui";
-import Colors from "./colors";
 
 export default class Core {
     
     constructor() {
-        this.screen = new Screen(this);
-        this.colors = new Colors(this.screen.screen);
-        this.gui = new Gui(this, this.screen);
+        this.gui = new Gui(this);
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
         
@@ -37,24 +33,12 @@ export default class Core {
         
         // this.colors.parse("00ff00-#90-ffffff-#90-ff0000-#90-00ff00");
         // this.colors.parse("000044-#32-0000ff-#64-ffff00-#64-ffffff");
-        this.colors.parse("9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3");
-
-        this.lastEvent = performance.now();
-        
-        const paint = () => {
-            if (performance.now() < this.lastEvent + 30000) {
-                const statistics = this.screen.getStatistics();
-                this.colors.setScreenColors(statistics);
-                this.screen.paint();
-                this.gui.paint(statistics);
-            }
-            requestAnimationFrame(paint);
-        };
-        paint();
+        this.gui.colors.parse("9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3");
     }
     
     start() {
-        this.onEvent();
+        this.gui.onEvent();
+        this.gui.clear();
         this.id = Date.now();
         
         this.startTime = performance.now();
@@ -73,10 +57,6 @@ export default class Core {
         });
     }
     
-    onEvent() {
-        this.lastEvent = performance.now();
-    }
-
     getElapsedTime() {
         if (!this.startTime) return null;
         if (this.endTime) return this.endTime - this.startTime;
@@ -84,14 +64,13 @@ export default class Core {
     }
     
     interrupt() {
-        this.onEvent();
+        this.gui.onEvent();
         this.dispatcher.postMessage({id: this.id, op: INTERRUPT});
         this.endTime = performance.now();
     }
     
     onSelectedZoom(x, y, x_size, y_size) {
         this.interrupt();
-        this.screen.clear();
         console.info("zoom", x, y, x_size, y_size);
         console.info(this.x0_start, this.x0_delta, this.y0_start, this.y0_delta);
         this.x0_start = this.x0_start + x * this.x0_delta;
@@ -103,24 +82,22 @@ export default class Core {
     }
 
     onFinished() {
-        this.onEvent();
         this.endTime = performance.now();
-        this.screen.logStatistics();
         this.gui.onFinished();
     }
     
     onBlockComplete(data) {
-        this.onEvent();
         if (data.id === this.id) {
-            this.screen.putBlock(data);
+            this.gui.putBlock(data);
         }
+        this.gui.onEvent();
     }
 
     onBlockStarted(data) {
-        this.onEvent();
         if (data.id === this.id) {
-            this.screen.startBlock(data);
+            this.gui.startBlock(data);
         }
+        this.gui.onEvent();
     }
     
     onmessage(event) {
