@@ -1,48 +1,33 @@
 import {CONFIGURE, START, BLOCK_COMPLETE, FINISHED, BLOCK_STARTED, INTERRUPT} from './op';
 import {X_SIZE, Y_SIZE} from "./dimensions";
 import Gui from "./gui";
+import {CALCULATING} from "./colors";
 
 export default class Core {
     
     constructor() {
-        this.gui = new Gui(this);
+        this.screen = new Module.Screen(X_SIZE, Y_SIZE);
+        this.gui = new Gui(this, this.screen);
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
         
         this.dispatcher.postMessage({op: CONFIGURE, worker_count: 24});
-
-        this.max_n = 256 * 1024;
-
-        // // Nice slow area:
-        // this.x0_start = 0.01311636238095419;
-        // this.x0_delta = 5.5964300526380535e-15;
-        // this.y0_start = 0.6325883646614131;
-        // this.y0_delta = 5.5964300526380535e-15;
-        
-        // // Broken histogram:
-        // this.x0_start = 0.40286747167707915;
-        // this.x0_delta = 1.4672303879337928e-11;
-        // this.y0_start = -0.3501103227933188;
-        // this.y0_delta = 1.4672303879337928e-11;
-        
-        // Full:
-        this.x0_start = -2;
-        this.x0_delta = 4 / X_SIZE;
-        this.y0_start = -2;
-        this.y0_delta = 4 / Y_SIZE;
-        
-        // this.colors.parse("00ff00-#90-ffffff-#90-ff0000-#90-00ff00");
-        // this.colors.parse("000044-#32-0000ff-#64-ffff00-#64-ffffff");
-        this.gui.colors.parse("9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3");
     }
     
-    start() {
-        this.gui.onEvent();
-        this.gui.clear();
+    start(x0_start, x0_delta, y0_start, y0_delta, max_n=0) {
+        this.interrupt();
+        this.screen.clear();
         this.id = Date.now();
         
         this.startTime = performance.now();
         this.endTime = null;
+
+        this.max_n = max_n || this.max_n;
+        this.x0_start = x0_start;
+        this.x0_delta = x0_delta;
+        this.y0_start = y0_start;
+        this.y0_delta = y0_delta;
+        console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n);
         
         this.dispatcher.postMessage({
             id: this.id,
@@ -55,6 +40,8 @@ export default class Core {
             max_n: this.max_n,
             op: START,
         });
+        
+        this.gui.onEvent();
     }
     
     getElapsedTime() {
@@ -64,21 +51,20 @@ export default class Core {
     }
     
     interrupt() {
-        this.gui.onEvent();
+        console.info("interrupting", this.id);
         this.dispatcher.postMessage({id: this.id, op: INTERRUPT});
         this.endTime = performance.now();
+        this.gui.onEvent();
     }
     
-    onSelectedZoom(x, y, x_size, y_size) {
-        this.interrupt();
-        console.info("zoom", x, y, x_size, y_size);
-        console.info(this.x0_start, this.x0_delta, this.y0_start, this.y0_delta);
-        this.x0_start = this.x0_start + x * this.x0_delta;
-        this.x0_delta = this.x0_delta * x_size / X_SIZE;
-        this.y0_start = this.y0_start + y * this.y0_delta;
-        this.y0_delta = this.y0_delta * y_size / Y_SIZE;
-        console.info(this.x0_start, this.x0_delta, this.y0_start, this.y0_delta);
-        this.start();
+    zoom(x, y, x_size, y_size) {
+        console.info("zooming", x, y, x_size, y_size);
+        const x0_start = this.x0_start + x * this.x0_delta;
+        const x0_delta = this.x0_delta * x_size / X_SIZE;
+        const y0_start = this.y0_start + y * this.y0_delta;
+        const y0_delta = this.y0_delta * y_size / Y_SIZE;
+        
+        this.start(x0_start, x0_delta, y0_start, y0_delta);
     }
 
     onFinished() {
@@ -86,20 +72,27 @@ export default class Core {
         this.gui.onFinished();
     }
     
-    onBlockComplete(data) {
-        if (data.id === this.id) {
-            this.gui.putBlock(data);
+    onBlockComplete({id, x_start, y_start, x_size, y_size, bytes}) {
+        if (id === this.id) {
+            const blockData = new Uint32Array(bytes);
+            const targetOffset = y_start * X_SIZE + x_start;
+            const screenData = this.screen.refData();
+            for (let y = 0; y < y_size; ++y) {
+                const sourceOffset = y * x_size;
+                screenData.set(blockData.subarray(sourceOffset, sourceOffset + x_size), targetOffset + y * X_SIZE);
+            }
         }
         this.gui.onEvent();
     }
 
-    onBlockStarted(data) {
-        if (data.id === this.id) {
-            this.gui.startBlock(data);
+    onBlockStarted({id, x_start, y_start, x_size, y_size}) {
+        if (id === this.id) {
+            // noinspection JSSuspiciousNameCombination
+            this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
         }
         this.gui.onEvent();
     }
-    
+
     onmessage(event) {
         const params = event.data;
         switch (params.op) {

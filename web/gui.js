@@ -106,14 +106,12 @@ class WheelSelectLocalStorage {
 
 export default class Gui {
     
-    constructor(core) {
-        this.screen = new Module.Screen(X_SIZE, Y_SIZE);
+    constructor(core, screen) {
+        this.screen = screen;
         this.colors = new Colors(this.screen);
         this.core = core;
 
         // Init canvas and screen.
-        
-        this.screen.clear();
         
         this.context = document.getElementById("canvas").getContext("2d");
         this.context.canvas.width = X_SIZE;
@@ -123,8 +121,6 @@ export default class Gui {
         const uint8ClampedArray = new Uint8ClampedArray(this.imageBytesRef.buffer, this.imageBytesRef.byteOffset, this.imageBytesRef.byteLength);
         this.imageData = new ImageData(uint8ClampedArray, X_SIZE, Y_SIZE);
 
-        this.screenData = this.screen.refData();
-        
         this.paintTime = 0;
         this.paintCount = 0;
         
@@ -277,30 +273,10 @@ export default class Gui {
         this.paintCount++;
     }
 
-    clear() {
-        this.screen.clear();
-    }
-    
-    // Message when a block is started.
-    startBlock({x_start, y_start, x_size, y_size}) {
-        // noinspection JSSuspiciousNameCombination
-        this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
-    }
-    
-    // Put a calculated block into the screen data.
-    putBlock({x_start, y_start, x_size, y_size, bytes}) {
-        const blockData = new Uint32Array(bytes);
-        const targetOffset = y_start * X_SIZE + x_start;
-        for (let y = 0; y < y_size; ++y) {
-            const sourceOffset = y * x_size;
-            this.screenData.set(blockData.subarray(sourceOffset, sourceOffset + x_size), targetOffset + y * X_SIZE);
-        }
-    }
-    
     onMouseRect(start, end) {
         const {x, y, dx, dy} = asRectWithAspectRatio(start, end, X_SIZE / Y_SIZE);
         console.info("rect", start, end);
-        this.core.onSelectedZoom(x, y, dx, dy);
+        this.core.zoom(x, y, dx, dy);
     }
     
     onMouseEvent() {

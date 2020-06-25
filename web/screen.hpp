@@ -27,6 +27,7 @@ struct Screen {
    Screen(uint32_t x_size, uint32_t y_size) : x_size(x_size), y_size(y_size) {
       data = new uint32_t[y_size * x_size];
       image = new uint32_t[y_size * x_size];
+      clear();
    }
 
    void set_cycle_interval(float cycle_interval) {
