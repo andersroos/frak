@@ -35,15 +35,6 @@ using namespace std;
 
 /*
  * Maps coordinates x, y, depth, time to color in 34 bit abrg (hi -> lo).
- *
- * Color specs are written in 24 bit rgb (hi -> lo) on the folowing format:
- *    <format> := <flags> ";" <color-sequences>
- *    <flags> := <flags> ":" <flag>
- *    <flag> := "wrap" | "cycle" | "stretch"
- *    <color-sequence> := <color> | (<color> "-#" <count>) "-" <color-sequences>
- *  
- *  Example of length 16 (dark grey to white (long) to red (short)
- *    wraps;101010-#9-ffffff-#4-ff0000
  */
 
 

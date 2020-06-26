@@ -163,7 +163,6 @@ export default class Gui {
         this.mouseState = new MouseState(this.context.canvas, () => this.onMouseEvent(), (start, end) => this.onMouseRect(start, end));
         
         // Histogram.
-        
         const svg = document.getElementById('histogram');
         svg.setAttribute("height", HISTOGRAM_SIZE * 2);
         for (let i = 0; i < HISTOGRAM_SIZE; ++i) {
@@ -177,7 +176,6 @@ export default class Gui {
         }
         
         // Max n.
-        
         this.maxNInput = new ValueWheelLocalStorage({
             key: 'max-n',
             onChange: v => {
@@ -188,9 +186,22 @@ export default class Gui {
             formatValue: v => formatInt(v, {padTo: 12, space: 3}),
             defaultValue: 256 * 1024,
         });
+
+        // Colors.
+        this.colorsInput = new OptionWheelLocalStorage({
+            key: 'colors',
+            onSelect: v => {
+                this.colors.parse(v);
+                this.onEvent();
+            },
+            options: [
+                {label: 'RAINBOW', value: "9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3"},
+                {label: 'WHITE-RED', value: "101010-#64-ffffff-#64-ff0000-#24-101010"},
+                {label: 'C64', value: "eef493-#1-a8654a-#1-7ccb8e-#1-000000-#1-eef493"},
+            ]
+        });
         
         // Color cycle.
-        
         this.colorCycleInput = new OptionWheelLocalStorage({
             key: 'color-cycle',
             options: [
@@ -208,7 +219,6 @@ export default class Gui {
         });
         
         // Color scaling.
-        
         this.colorScalingInput = new ValueWheelLocalStorage({
             key: 'color-scaling',
             onChange: v => {
@@ -236,7 +246,6 @@ export default class Gui {
         });
 
         // Color offset.
-        
         this.colorOffsetImput = new OptionWheelLocalStorage({
             key: 'color-offset',
             onSelect: v => {
@@ -259,7 +268,6 @@ export default class Gui {
         });
         
         // Setup paint loop.
-        
         this.lastEvent = performance.now();
         const paint = () => {
             if (performance.now() < this.lastEvent + 30000) {
