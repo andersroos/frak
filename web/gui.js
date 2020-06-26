@@ -186,7 +186,7 @@ export default class Gui {
             },
             newValue: (v, direction) => direction ? Math.max(1, v / QBRT_2) : v * QBRT_2,
             formatValue: v => formatInt(v, {padTo: 12, space: 3}),
-            defaultValue: 64
+            defaultValue: 256 * 1024,
         });
         
         // Color cycle.
