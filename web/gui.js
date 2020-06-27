@@ -1,4 +1,4 @@
-import {formatInt} from "./util";
+import {calculateWeight, formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
 
@@ -75,7 +75,7 @@ class MouseState {
 class ValueWheelLocalStorage {
     constructor({key, onChange, newValue, formatValue, defaultValue}) {
         this.key = key;
-        this.value = Number.parseFloat(localStorage.getItem(key)|| defaultValue);
+        this.value = Number.parseFloat(localStorage.getItem(key) || defaultValue);
         this.onChange = onChange;
         this.newValue = newValue;
         this.formatValue = formatValue;
@@ -141,9 +141,10 @@ class OptionWheelLocalStorage {
 
 export default class Gui {
     
-    constructor(core, screen) {
+    constructor(core, screen, history) {
         this.screen = screen;
         this.colors = new Colors(this.screen);
+        this.history = history;
         this.core = core;
 
         // Init canvas and screen.
@@ -180,6 +181,7 @@ export default class Gui {
             key: 'max-n',
             onChange: v => {
                 this.core.setMaxN(Math.round(v));
+                // TODO Changing max n should not be a start, it should be some sort of refining operation?
                 this.core.start();
             },
             newValue: (v, direction) => direction ? Math.max(1, v / QBRT_2) : v * QBRT_2,
@@ -285,6 +287,23 @@ export default class Gui {
         this.lastEvent = performance.now();
     }
     
+    onHistoryChanged() {
+        const list = this.history.list();
+        console.info("onHistoryChanged", list);
+        const history = document.querySelector('#history tbody');
+        const template = document.querySelector('#history-item');
+        history.innerHTML = null;
+        list.forEach(item => {
+            console.info("item", item);
+            const historyItem = template.content.cloneNode(true);
+            historyItem.querySelector('.id').textContent = item.id.toString();
+            historyItem.querySelector('.elapsed').textContent = item.elapsed ? formatFloat(item.elapsed, {dec: 2}) : 'NULL';
+            historyItem.querySelector('.weight').textContent = item.weight ? formatFloat(item.weight, {human: true, dec: 4}) : 'NULL';
+            console.info("item", historyItem);
+            history.appendChild(historyItem);
+        });
+    }
+    
     paintCanvas(time) {
         this.screen.paint(time);
         this.context.putImageData(this.imageData, 0, 0);
@@ -314,7 +333,7 @@ export default class Gui {
         const elapsed = this.core.getElapsedTime();
         document.getElementById('elapsed').textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
         
-        document.getElementById("weight").textContent = formatFloat(statistics.infiniteCount * this.core.max_n + statistics.sumDepth, {human: true, dec: 4, padTo: 9});
+        document.getElementById("weight").textContent = formatFloat(calculateWeight(statistics, this.core.max_n), {human: true, dec: 4, padTo: 9});
         
         const format = number => formatInt(number, {space: 3, padTo: 9});
         
@@ -356,9 +375,7 @@ export default class Gui {
         this.onEvent();
     }
     
-    onFinished() {
-        const statistics = this.screen.getStatistics();
-
+    onFinished(statistics) {
         console.info("percentage", statistics.histogramCount / statistics.count * 100);
         console.info(statistics.histogramCount, statistics.count, statistics.infiniteCount);
 

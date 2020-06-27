@@ -35,6 +35,5 @@ window.init = () => {
     // );
 
     core.start();
-    core.gui.colorScalingInput.set(1);
 };
 

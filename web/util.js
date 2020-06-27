@@ -69,3 +69,6 @@ export const formatFloat = (number, {dec=2, padTo=0, padChar=' ', human=false}) 
     return str;
 };
 window.formatFloat = formatFloat;
+
+
+export const calculateWeight = (statistics, max_n) => statistics.infiniteCount * max_n + statistics.sumDepth;

@@ -2,12 +2,15 @@ import {CONFIGURE, START, BLOCK_COMPLETE, FINISHED, BLOCK_STARTED, INTERRUPT} fr
 import {X_SIZE, Y_SIZE} from "./dimensions";
 import Gui from "./gui";
 import {CALCULATING} from "./colors";
+import History from "./history";
+import {calculateWeight} from "./util";
 
 export default class Core {
     
     constructor() {
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
-        this.gui = new Gui(this, this.screen);
+        this.history = new History(() => this.gui.onHistoryChanged());
+        this.gui = new Gui(this, this.screen, this.history);
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
         
@@ -37,6 +40,8 @@ export default class Core {
         this.endTime = null;
 
         console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n);
+        
+        this.history.push({id: this.id});
         
         this.dispatcher.postMessage({
             id: this.id,
@@ -79,8 +84,10 @@ export default class Core {
     }
 
     onFinished() {
+        const statistics = this.screen.getStatistics();
         this.endTime = performance.now();
-        this.gui.onFinished();
+        this.history.update({id: this.id, elapsed: this.endTime - this.startTime, weight: calculateWeight(statistics, this.max_n)});
+        this.gui.onFinished(statistics);
     }
     
     onBlockComplete({id, x_start, y_start, x_size, y_size, bytes}) {
