@@ -12,7 +12,7 @@ class Gradient {
 export default class Colors {
     constructor(screen) {
         this.screen = screen;
-        this.scaleMultiple = 1;
+        this.scaleLength = 256;
         this.cycleTime = 0;
         this.offset = 0;
         this.gradients = [];
@@ -28,25 +28,27 @@ export default class Colors {
         this.offset = offset;
     }
     
-    setScaleMultiple(multiple) {
-        this.scaleMultiple = multiple;
+    setScaleLength(scaleLength) {
+        this.scaleLength = scaleLength;
     }
     
     setScreenColors(minDepth) {
         this.screen.removeGradients();
         
+        const scaleMultiple = this.scaleLength / this.gradientsSize;
+        
         this.gradients.forEach(gradient => {
-            this.screen.addGradient(gradient.from, Math.max(1, Math.round(gradient.count * this.scaleMultiple)), gradient.to);
+            this.screen.addGradient(gradient.from, Math.max(1, Math.round(gradient.count * scaleMultiple)), gradient.to);
         });
 
         // Calculate cycle time based on stretched gradient.
-        this.screen.setCycleInterval(this.cycleTime / (this.scaleMultiple * this.gradientsSize));
+        this.screen.setCycleInterval(this.cycleTime / this.scaleLength);
         
         if (this.offset === 0) {
             this.screen.setColorOffset(0);
         }
         else if (this.offset < 1) {
-            this.screen.setColorOffset(Math.floor(this.scaleMultiple * this.gradientsSize * this.offset));
+            this.screen.setColorOffset(Math.floor(this.scaleLength * this.offset));
         }
         else {
             this.screen.setColorOffset(minDepth)

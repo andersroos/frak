@@ -235,27 +235,14 @@ export default class Gui {
         this.colorScalingInput = new ValueWheelLocalStorage({
             key: 'color-scaling',
             onChange: v => {
-                this.colors.setScaleMultiple(v);
+                this.colors.setScaleLength(v);
                 this.onEvent();
             },
-            newValue: (v, direction) => direction ? v / QBRT_2 : v * QBRT_2,
+            newValue: (v, direction) => direction ? Math.max(4, v / QBRT_2) : v * QBRT_2,
             formatValue: v => {
-                if (v === 1) {
-                    return "OFF";
-                }
-                if (v < 1) {
-                    const inv = 1/v;
-                    if (inv < 4) {
-                        return "1/" + formatFloat(inv, {dec: 1});
-                    }
-                    return "1/" + formatInt(inv, {});
-                }
-                if (v < 4) {
-                    return formatFloat(v, {dec: 1});
-                }
-                return formatInt(v, {});
+                return formatInt(v, {space: 3});
             },
-            defaultValue: 1
+            defaultValue: 256
         });
 
         // Color offset.
