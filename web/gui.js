@@ -175,7 +175,7 @@ export default class Gui {
             rect.setAttribute("fill", "#00ff00");
             svg.appendChild(rect);
         }
-        
+
         // Max n.
         this.maxNInput = new ValueWheelLocalStorage({
             key: 'max-n',
@@ -189,6 +189,17 @@ export default class Gui {
             defaultValue: 256 * 1024,
         });
 
+        // Worker count.
+        this.workerCountInput = new ValueWheelLocalStorage({
+            key: 'worker-count',
+            onChange: v => {
+                this.core.setWorkerCount(v);
+            },
+            newValue: (v, direction) => direction ? Math.max(1, v - 1) : v + 1,
+            formatValue: v => formatInt(v, {padTo: 10, space: 3}),
+            defaultValue: 24,
+        });
+        
         // Colors.
         this.colorsInput = new OptionWheelLocalStorage({
             key: 'colors',
@@ -289,17 +300,19 @@ export default class Gui {
     
     onHistoryChanged() {
         const list = this.history.list();
-        console.info("onHistoryChanged", list);
         const history = document.querySelector('#history tbody');
         const template = document.querySelector('#history-item');
         history.innerHTML = null;
         list.forEach(item => {
-            console.info("item", item);
             const historyItem = template.content.cloneNode(true);
+            const elapsedSeconds = item.elapsed / 1000 || undefined;
             historyItem.querySelector('.id').textContent = item.id.toString();
-            historyItem.querySelector('.elapsed').textContent = item.elapsed ? formatFloat(item.elapsed, {dec: 2}) : 'NULL';
+            historyItem.querySelector('.type').textContent = item.type.toString();
+            historyItem.querySelector('.workers').textContent = item.workers.toString();
+            historyItem.querySelector('.elapsed').textContent = elapsedSeconds ? formatFloat(elapsedSeconds, {dec: 2}) : 'NULL';
             historyItem.querySelector('.weight').textContent = item.weight ? formatFloat(item.weight, {human: true, dec: 4}) : 'NULL';
-            console.info("item", historyItem);
+            historyItem.querySelector('.weight-per-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds, {human: true, dec: 4}) : 'NULL';
+            historyItem.querySelector('.weight-per-worker-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds / item.workers, {human: true, dec: 4}) : 'NULL';
             history.appendChild(historyItem);
         });
     }
@@ -367,7 +380,6 @@ export default class Gui {
 
     onMouseRect(start, end) {
         const {x, y, dx, dy} = asRectWithAspectRatio(start, end, X_SIZE / Y_SIZE);
-        console.info("rect", start, end);
         this.core.zoom(x, y, dx, dy);
     }
     
@@ -376,9 +388,6 @@ export default class Gui {
     }
     
     onFinished(statistics) {
-        console.info("percentage", statistics.histogramCount / statistics.count * 100);
-        console.info(statistics.histogramCount, statistics.count, statistics.infiniteCount);
-
         console.info("screen paint average", this.paintTime / this.paintCount, "ms");
         this.paintCount = 0;
         this.paintTime = 0;

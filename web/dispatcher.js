@@ -29,8 +29,6 @@ class Dispatcher {
         this.id = id;
         this.workingCount = 0;
         
-        console.info(`starting id=${id}, max_n=${max_n}, y_size=${y_size}`);
-        
         // create one block per line to start (ok we need common class, so we will need to build this js soon).
         for (let y = 0; y < y_size; ++y) {
             this.blocks.push({

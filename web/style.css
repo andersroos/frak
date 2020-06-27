@@ -35,3 +35,34 @@ canvas {
     vertical-align: top;
     max-width: 212px;
 }
+
+table {
+    border-spacing: 12px 4px;
+}
+
+th {
+    text-align: left;
+}
+
+td.num {
+    text-align: right;
+}
+
+button {
+    color: #0f0;
+    background: black;
+    font-family: LCDM2N, monospace;
+    border: none;
+    padding: 0;
+    padding-right: 16px;
+    font-size: 32px;
+    display: inline-block;
+}
+
+button:hover {
+    font-weight: bold;
+}
+
+button:focus {
+    outline: none;
+}

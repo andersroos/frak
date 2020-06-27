@@ -13,8 +13,10 @@ export default class Core {
         this.gui = new Gui(this, this.screen, this.history);
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
-        
-        this.dispatcher.postMessage({op: CONFIGURE, worker_count: 24});
+    }
+    
+    setWorkerCount(workerCount) {
+        this.workerCount = workerCount;
     }
     
     setMaxN(max_n) {
@@ -34,6 +36,7 @@ export default class Core {
         }
         
         this.interrupt();
+        this.dispatcher.postMessage({op: CONFIGURE, worker_count: this.workerCount});
         this.id = Date.now();
         
         this.startTime = performance.now();
@@ -41,7 +44,16 @@ export default class Core {
 
         console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n);
         
-        this.history.push({id: this.id});
+        this.history.push({
+            id: this.id,
+            workers: this.workerCount,
+            type: 'chrome*js',
+            x0_start: this.x0_start,
+            x0_delta: this.x0_delta,
+            y0_start: this.y0_start,
+            y0_delta: this.y0_delta,
+            max_n: this.max_n,
+        });
         
         this.dispatcher.postMessage({
             id: this.id,

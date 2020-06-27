@@ -16,10 +16,12 @@
   <div>
     <canvas id="canvas"></canvas>
     <div class="controls">
+      <button id="start">START</button><button id="save">SAVE</button>
       <p class="pre" style="margin-bottom: 4px;">ELAPSED       <span id="elapsed"></span> S</p>
       <p class="pre" style="margin-bottom: 10px;" title="weight: sum of depth in all points">WEIGHT        <span id="weight"></span></p>
       <p class="pre">MIN_DEPTH <span id="min-depth"></span></p>
       <p class="pre">MAX_DEPTH <span id="max-depth"></span></p>
+      <p class="pre wheel-select" title="scroll to change" id="worker-count">WORKERS <span class="value"></span></p>
       <p class="pre wheel-select" title="scroll to change" id="max-n">MAX_N <span class="value"></span></p>
       <p class="pre"><span id="histogram-info"></span></p>
       <svg id="histogram">
@@ -34,8 +36,12 @@
     <thead>
       <tr>
         <th>ID</th>
+        <th>TYPE</th>
+        <th>WORKERS</th>
         <th>ELAPSED</th>
         <th>WEIGHT</th>
+        <th title="depth per seconds">TOTAL SPEED</th>
+        <th title="depth per worker per second">WORKER SPEED</th>
       </tr>
     </thead>
     <tbody>
@@ -44,8 +50,12 @@
   <template id="history-item">
     <tr>
       <td class="id"></td>
-      <td class="elapsed"></td>
-      <td class="weight"></td>
+      <td class="type">11</td>
+      <td class="workers num"></td>
+      <td class="elapsed num"></td>
+      <td class="weight num"></td>
+      <td class="weight-per-second num"></td>
+      <td class="weight-per-worker-second num"></td>
     </tr>
   </template>
 </body>

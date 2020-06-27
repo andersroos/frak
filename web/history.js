@@ -13,7 +13,6 @@ export default class History {
         this.onChanged = onChanged;
         this.currentId = null;
         this.data = {};
-        this.history = [];
         this.savedIds = new Set();
         loadFromServer().then(saved => {
             Object.entries(saved).forEach(([id, e]) => {
@@ -22,23 +21,30 @@ export default class History {
             });
             this.onChanged();
         });
+        
+        window.onpopstate = (e) => {
+            if (e.state && e.state.id) {
+                // TODO Start fractal from id.
+                console.info("starting fractal from", e.state.id);
+            }
+        };
     }
 
-    // Return a list of saved including current.
+    // Return a list of saved including current and last history.
     list() {
-        const saved = Array.from(this.savedIds.values(), id => this.data[id]);
-        if (!this.savedIds.has(this.currentId) && this.currentId) {
-            saved.push(this.data[this.currentId]);
+        const result = Array.from(this.savedIds.values(), id => this.data[id]);
+        if (!this.savedIds.has(this.currentId)) {
+            result.push(this.data[this.currentId]);
         }
-        saved.sort((a, b) => a.id - b.id);
-        return saved;
+        result.sort((a, b) => b.id - a.id);
+        return result;
     }
     
     // Called when new fractal is started (for example on zoom).
     push(data) {
         this.data[data.id] = data;
         this.currentId = data.id;
-        this.history.push(data.id);
+        window.history.pushState({id: data.id}, null, "#" + data.id);
         this.onChanged();
     }
     
