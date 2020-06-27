@@ -313,6 +313,7 @@ export default class Gui {
             historyItem.querySelector('.weight').textContent = item.weight ? formatFloat(item.weight, {human: true, dec: 4}) : 'NULL';
             historyItem.querySelector('.weight-per-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds, {human: true, dec: 4}) : 'NULL';
             historyItem.querySelector('.weight-per-worker-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds / item.workers, {human: true, dec: 4}) : 'NULL';
+            historyItem.querySelector('.max-n').textContent = item.max_n ? formatInt(item.max_n, {space: 3}) : 'NULL';
             history.appendChild(historyItem);
         });
     }

@@ -11,12 +11,12 @@ window.init = () => {
     const core = new Core();
     
     // Full.
-    core.setCoordinates(
-        -2,
-        4 / X_SIZE,
-        -2,
-        4 / Y_SIZE,
-    );
+    core.configure({
+        x0_start: -2,
+        x0_delta: 4 / X_SIZE,
+        y0_start: -2,
+        y0_delta: 4 / Y_SIZE,
+    });
     
     // // "Broken" histogram.
     // core.setCoordinates(
@@ -34,6 +34,8 @@ window.init = () => {
     //     5.5964300526380535e-15,
     // );
 
+    core.configure({id: Date.now()});
+    core.pushHistory();
     core.start();
 };
 

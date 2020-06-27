@@ -9,8 +9,9 @@ const loadFromServer = () => {
 
 export default class History {
     
-    constructor(onChanged) {
+    constructor(onChanged, startFromHistory) {
         this.onChanged = onChanged;
+        this.startFromHistory = startFromHistory;
         this.currentId = null;
         this.data = {};
         this.savedIds = new Set();
@@ -24,8 +25,12 @@ export default class History {
         
         window.onpopstate = (e) => {
             if (e.state && e.state.id) {
-                // TODO Start fractal from id.
-                console.info("starting fractal from", e.state.id);
+                const data = this.data[e.state.id];
+                if (data) {
+                    this.currentId = e.state.id;
+                    this.startFromHistory(data);
+                    this.onChanged();
+                }
             }
         };
     }
@@ -33,7 +38,7 @@ export default class History {
     // Return a list of saved including current and last history.
     list() {
         const result = Array.from(this.savedIds.values(), id => this.data[id]);
-        if (!this.savedIds.has(this.currentId)) {
+        if (this.currentId && !this.savedIds.has(this.currentId)) {
             result.push(this.data[this.currentId]);
         }
         result.sort((a, b) => b.id - a.id);
