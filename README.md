@@ -45,5 +45,3 @@ registry
 # Feature Requests
 
 * Use higher precision in calculations.
-* Set max n.
-* Back/Undo for zoom (and other operations).
