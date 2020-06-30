@@ -16,8 +16,8 @@
   <div>
     <canvas id="canvas"></canvas>
     <div class="controls">
+      <form id="save"><input type="text" size="10"/><button type="submit">SAVE</button></form>
       <p><button id="benchmark">START BENCHMARK</button></p>
-      <p><form><input class="save" type="text" size="10"/><button type="submit" id="save">SAVE</button></form></p>
       <p class="pre" style="margin-bottom: 4px;">ELAPSED       <span id="elapsed"></span> S</p>
       <p class="pre" style="margin-bottom: 10px;" title="weight: sum of depth in all points">WEIGHT        <span id="weight"></span></p>
       <p class="pre">MIN_DEPTH <span id="min-depth"></span></p>
@@ -36,14 +36,10 @@
   <table id="saved">
     <thead>
       <tr>
-        <th>ID</th>
-        <th>TYPE</th>
-        <th>WORKERS</th>
-        <th>ELAPSED</th>
-        <th>WEIGHT</th>
-        <th title="depth per seconds">TOTAL SPEED</th>
-        <th title="depth per worker per second">WORKER SPEED</th>
+        <th>KEY</th>
+        <th>COL</th>
         <th>MAX_N</th>
+        <th>WEIGHT</th>
       </tr>
     </thead>
     <tbody>
@@ -51,14 +47,10 @@
   </table>
   <template id="saved-item">
     <tr>
-      <td class="id"></td>
-      <td class="type">11</td>
-      <td class="workers num"></td>
-      <td class="elapsed num"></td>
-      <td class="weight num"></td>
-      <td class="weight-per-second num"></td>
-      <td class="weight-per-worker-second num"></td>
+      <td class="key"></td>
+      <td class="col">11</td>
       <td class="max-n num"></td>
+      <td class="weight num"></td>
     </tr>
   </template>
 </body>

@@ -59,8 +59,25 @@ export default class Core {
         this.start();
     }
     
+    // Start a calculation from saved data.
+    startFromSaved({key, x0_start, x0_delta, y0_start, y0_delta, colors, max_n}) {
+        console.info("starting from saved", key);
+        this.interrupt();
+        this.configure({
+            id: Date.now(),
+            key,
+            x0_start,
+            x0_delta,
+            y0_start,
+            y0_delta,
+            colors,
+            max_n,
+        });
+        this.start();
+    }
+    
     // Configure the next fractal run.
-    configure({x0_start, x0_delta, y0_start, y0_delta, workers, max_n, id}) {
+    configure({x0_start, x0_delta, y0_start, y0_delta, colors, workers, max_n, id}) {
         if (x0_start !== undefined && x0_delta !== undefined && y0_start !== undefined && y0_delta !== undefined) {
             this.x0_start = x0_start;
             this.x0_delta = x0_delta;
@@ -69,6 +86,9 @@ export default class Core {
         }
         if (max_n !== undefined) {
             this.max_n = max_n;
+        }
+        if (colors !== undefined) {
+            this.gui.colorsInput.set(colors);
         }
         if (workers !== undefined) {
             this.workerCount = workers;
@@ -87,6 +107,7 @@ export default class Core {
             id: this.id,
             workers: this.workerCount,
             type: 'chrome*js',
+            colors: 'hejhej',
             x0_start: this.x0_start,
             x0_delta: this.x0_delta,
             y0_start: this.y0_start,

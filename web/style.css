@@ -54,7 +54,7 @@ button {
     font-family: LCDM2N, monospace;
     border: none;
     margin-right: 16px;
-    font-size: 24px;
+    font-size: 20px;
     padding: 4px 3px 0 3px;
 }
 
@@ -62,7 +62,7 @@ input {
     color: #0f0;
     background: #555;
     font-family: LCDM2N, monospace;
-    font-size: 24px;
+    font-size: 20px;
     margin-right: 4px;
     padding: 0;
     padding-top: 3px;
@@ -70,6 +70,10 @@ input {
 
 button:hover {
     font-weight: bold;
+}
+
+button:disabled {
+    color: #0a0;
 }
 
 button:focus {

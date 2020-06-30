@@ -34,12 +34,17 @@ export default class History {
             }
         };
     }
-
+    
     // Return a list of saved.
     listSaved() {
         const result = Object.values(this.savedData);
         result.sort((a, b) => b.id - a.id);
         return result;
+    }
+    
+    // Return saved data.
+    getSaved(key) {
+        return this.savedData[key];
     }
     
     // Called when new fractal is started (for example on zoom).
@@ -66,11 +71,19 @@ export default class History {
         }
     }
     
-    // Save fractal to persistent storage or update if exists, key is key
-    save(data) {
+    isKeySaved(key) {
+        return Boolean(this.savedData[key]);
+    }
+    
+    // Save current fractal to persistent storage or update if exists, key is key
+    save(key) {
+        console.info("saving", key);
+        this.savedData[key] = Object.assign(this.savedData[key] || {}, this.historyData[this.currentId] || {}, {key: key});
+        this.onChanged();
     }
     
     // Remove fractal from persistent storage.
     remove(key) {
     }
+    
 }
