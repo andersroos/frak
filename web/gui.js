@@ -88,9 +88,13 @@ class ValueWheelLocalStorage {
         this.onValueChanged();
     }
     
-    set(value) {
+    setValue(value) {
         this.value = value;
         this.onValueChanged();
+    }
+    
+    getValue() {
+        return this.value;
     }
     
     onWheel(event) {
@@ -101,7 +105,7 @@ class ValueWheelLocalStorage {
     onValueChanged() {
         this.element.textContent = this.formatValue(this.value);
         localStorage.setItem(this.key, this.value.toString());
-        this.onChange(this.value);
+        if (this.onChange) this.onChange(this.value);
     }
 }
 
@@ -110,7 +114,8 @@ class OptionWheelLocalStorage {
     constructor({key, options, onSelect}) {
         this.key = key;
         this.options = options;
-        this.selected = Number.parseInt(localStorage.getItem(key)) || 0;
+        this.setKey(localStorage.getItem(key));
+        this.selected = 0;
         this.onSelect = onSelect;
 
         const element = document.getElementById(key);
@@ -119,6 +124,20 @@ class OptionWheelLocalStorage {
         this.element = element.getElementsByClassName("value")[0];
         
         this.onSelectedChanged();
+    }
+    
+    setKey(key) {
+        this.selected = 0;
+        for (let i = 0; i < this.options.length; ++i) {
+            if (this.getKey(i) === key) {
+                this.selected = i;
+                break;
+            }
+        }
+    }
+    
+    getKey(i) {
+        return this.options[i === undefined ? this.selected : i].label.replace(/\s/, '');
     }
     
     onWheel(event) {
@@ -134,7 +153,7 @@ class OptionWheelLocalStorage {
     onSelectedChanged() {
         const option = this.options[this.selected];
         this.element.textContent = option.label;
-        localStorage.setItem(this.key, this.selected.toString());
+        localStorage.setItem(this.key, this.getKey(this.selected));
         this.onSelect(option.value);
     }
 }
@@ -191,9 +210,6 @@ export default class Gui {
         // Worker count.
         this.workerCountInput = new ValueWheelLocalStorage({
             key: 'worker-count',
-            onChange: v => {
-                this.core.setWorkerCount(v);
-            },
             newValue: (v, direction) => direction ? Math.max(1, v - 1) : v + 1,
             formatValue: v => formatInt(v, {padTo: 10, space: 3}),
             defaultValue: 24,

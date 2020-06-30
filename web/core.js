@@ -15,12 +15,6 @@ export default class Core {
         this.dispatcher.onmessage = e => this.onmessage(e);
     }
 
-    // New worker count will be used on next recalculation.
-    setWorkerCount(workerCount) {
-        console.info("setting worker count", workerCount);
-        this.configure({workers: workerCount})
-    }
-  
     // Setting max n will cause immediate recalculation.
     setMaxN(max_n) {
         console.info("changing max_n", max_n);
@@ -46,7 +40,7 @@ export default class Core {
         this.start();
     }
 
-    // Start a calculation from history, keep some configurations like colors and max_n.
+    // Start a calculation from history, take only coordinates and keep rest as is.
     startFromHistory({x0_start, x0_delta, y0_start, y0_delta, id}) {
         console.info("starting from back/forward", id);
         this.interrupt();
@@ -54,7 +48,7 @@ export default class Core {
         this.history.update({
             id,
             max_n: this.max_n,
-            workers: this.workerCount,
+            workers: this.gui.workerCountInput.getValue(),
         });
         this.start();
     }
@@ -70,14 +64,14 @@ export default class Core {
             x0_delta,
             y0_start,
             y0_delta,
-            colors,
             max_n,
         });
+        this.gui.colorsInput.setKey(colors);
         this.start();
     }
     
     // Configure the next fractal run.
-    configure({x0_start, x0_delta, y0_start, y0_delta, colors, workers, max_n, id}) {
+    configure({x0_start, x0_delta, y0_start, y0_delta, workers, max_n, id}) {
         if (x0_start !== undefined && x0_delta !== undefined && y0_start !== undefined && y0_delta !== undefined) {
             this.x0_start = x0_start;
             this.x0_delta = x0_delta;
@@ -87,11 +81,8 @@ export default class Core {
         if (max_n !== undefined) {
             this.max_n = max_n;
         }
-        if (colors !== undefined) {
-            this.gui.colorsInput.set(colors);
-        }
-        if (workers !== undefined) {
-            this.workerCount = workers;
+        if (workers) {
+            this.gui.workerCountInput.setValue(workers);
         }
         if (id !== undefined) {
             if (this.endTime === null) {
@@ -105,9 +96,9 @@ export default class Core {
     pushHistory() {
         this.history.push({
             id: this.id,
-            workers: this.workerCount,
+            workers: this.gui.workerCountInput.getValue(),
             type: 'chrome*js',
-            colors: 'hejhej',
+            colors: this.gui.colorsInput.getKey(),
             x0_start: this.x0_start,
             x0_delta: this.x0_delta,
             y0_start: this.y0_start,
@@ -124,7 +115,7 @@ export default class Core {
         this.startTime = performance.now();
         this.endTime = null;
 
-        this.dispatcher.postMessage({op: CONFIGURE, worker_count: this.workerCount});
+        this.dispatcher.postMessage({op: CONFIGURE, worker_count: this.gui.workerCountInput.getValue()});
         
         console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n);
         
