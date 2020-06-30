@@ -286,22 +286,22 @@ export default class Gui {
     }
     
     onHistoryChanged() {
-        const list = this.history.list();
-        const history = document.querySelector('#history tbody');
-        const template = document.querySelector('#history-item');
-        history.innerHTML = null;
+        const list = this.history.listSaved();
+        const saved = document.querySelector('#saved tbody');
+        const template = document.querySelector('#saved-item');
+        saved.innerHTML = null;
         list.forEach(item => {
-            const historyItem = template.content.cloneNode(true);
+            const savedItem = template.content.cloneNode(true);
             const elapsedSeconds = item.elapsed / 1000 || undefined;
-            historyItem.querySelector('.id').textContent = item.id.toString();
-            historyItem.querySelector('.type').textContent = item.type.toString();
-            historyItem.querySelector('.workers').textContent = item.workers.toString();
-            historyItem.querySelector('.elapsed').textContent = elapsedSeconds ? formatFloat(elapsedSeconds, {dec: 2}) : 'NULL';
-            historyItem.querySelector('.weight').textContent = item.weight ? formatFloat(item.weight, {human: true, dec: 4}) : 'NULL';
-            historyItem.querySelector('.weight-per-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds, {human: true, dec: 4}) : 'NULL';
-            historyItem.querySelector('.weight-per-worker-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds / item.workers, {human: true, dec: 4}) : 'NULL';
-            historyItem.querySelector('.max-n').textContent = item.max_n ? formatInt(item.max_n, {space: 3}) : 'NULL';
-            history.appendChild(historyItem);
+            savedItem.querySelector('.id').textContent = item.id.toString();
+            savedItem.querySelector('.type').textContent = item.type.toString();
+            savedItem.querySelector('.workers').textContent = item.workers.toString();
+            savedItem.querySelector('.elapsed').textContent = elapsedSeconds ? formatFloat(elapsedSeconds, {dec: 2}) : 'NULL';
+            savedItem.querySelector('.weight').textContent = item.weight ? formatFloat(item.weight, {human: true, dec: 4}) : 'NULL';
+            savedItem.querySelector('.weight-per-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds, {human: true, dec: 4}) : 'NULL';
+            savedItem.querySelector('.weight-per-worker-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds / item.workers, {human: true, dec: 4}) : 'NULL';
+            savedItem.querySelector('.max-n').textContent = item.max_n ? formatInt(item.max_n, {space: 3}) : 'NULL';
+            saved.appendChild(savedItem);
         });
     }
     

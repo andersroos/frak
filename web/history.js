@@ -13,19 +13,19 @@ export default class History {
         this.onChanged = onChanged;
         this.startFromHistory = startFromHistory;
         this.currentId = null;
-        this.data = {};
-        this.savedIds = new Set();
+        this.historyData = {};
+        this.savedData = {};
+        
         loadFromServer().then(saved => {
-            Object.entries(saved).forEach(([id, e]) => {
-                this.data[id] = e;
-                this.savedIds.add(id);
+            Object.entries(saved).forEach(([key, e]) => {
+                this.savedData[key] = e;
             });
             this.onChanged();
         });
         
         window.onpopstate = (e) => {
             if (e.state && e.state.id) {
-                const data = this.data[e.state.id];
+                const data = this.historyData[e.state.id];
                 if (data) {
                     this.currentId = e.state.id;
                     this.startFromHistory(data);
@@ -35,46 +35,42 @@ export default class History {
         };
     }
 
-    // Return a list of saved including current and last history.
-    list() {
-        const result = Array.from(this.savedIds.values(), id => this.data[id]);
-        if (this.currentId && !this.savedIds.has(this.currentId)) {
-            result.push(this.data[this.currentId]);
-        }
+    // Return a list of saved.
+    listSaved() {
+        const result = Object.values(this.savedData);
         result.sort((a, b) => b.id - a.id);
         return result;
     }
     
     // Called when new fractal is started (for example on zoom).
     push(data) {
-        this.data[data.id] = data;
+        this.historyData[data.id] = data;
         this.currentId = data.id;
         window.history.pushState({id: data.id}, null, "#" + data.id);
         this.onChanged();
     }
     
-    // Removes current and makes last on back stack current. The current will be kept in forward list.
-    back() {
-    }
-    
-    // Pushes next on forward list and makes it current if it exists.
-    forward() {
-    }
-    
-    // Update current fractal with data (elapsed time, colors, etc).
+    // Update current fractal with historyData (elapsed time, colors, etc).
     update(data) {
         if (data.id === this.currentId) {
-            Object.assign(this.data[data.id], data);
+            Object.assign(this.historyData[data.id], data);
             this.onChanged();
         }
     }
     
-    // Save current fractal to persistent storage.
-    save() {
+    // Persist current data as a benchmark result.
+    addBenchmarkResult() {
+        const data = this.historyData[this.currentId];
+        if (data.key !== 'benchmark') {
+            throw new Error('current data is not a benchmark run');
+        }
     }
     
-    // Remove current fractal from persistent storage.
-    remove() {
+    // Save fractal to persistent storage or update if exists, key is key
+    save(data) {
     }
     
+    // Remove fractal from persistent storage.
+    remove(key) {
+    }
 }

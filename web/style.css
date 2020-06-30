@@ -53,10 +53,19 @@ button {
     background: black;
     font-family: LCDM2N, monospace;
     border: none;
+    margin-right: 16px;
+    font-size: 24px;
+    padding: 4px 3px 0 3px;
+}
+
+input {
+    color: #0f0;
+    background: #555;
+    font-family: LCDM2N, monospace;
+    font-size: 24px;
+    margin-right: 4px;
     padding: 0;
-    padding-right: 16px;
-    font-size: 32px;
-    display: inline-block;
+    padding-top: 3px;
 }
 
 button:hover {
@@ -64,5 +73,5 @@ button:hover {
 }
 
 button:focus {
-    outline: none;
+    // outline: none;
 }
