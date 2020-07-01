@@ -61,7 +61,16 @@ export default class Core {
         this.gui.setKey(null);
         this.interrupt().then(() => {
             this.screen.clear();
-            this.configure({benchmark: '01', id: Date.now(), x0_delta: 0.00014425531844608486 , y0_delta: 0.00014425531844608486, x0_start_index: -8410, y0_start_index: -2206, max_n: 2560});
+            this.configure({
+                benchmark: '01',
+                id: Date.now(),
+                x0_delta: 0.00014425531844608486 ,
+                y0_delta: 0.00014425531844608486,
+                x0_start_index: -8410,
+                y0_start_index: -2206,
+                max_n: 2560,
+                color_scale: 512,
+            });
             this.pushHistory();
             this.start();
         });
@@ -72,7 +81,16 @@ export default class Core {
         this.gui.setKey(null);
         this.interrupt().then(() => {
             this.screen.clear();
-            this.configure({benchmark: '12', id: Date.now(), x0_delta: 4.000367762006723e-15, y0_delta: 4.000367762006723e-15, x0_start_index: 3278789141870, y0_start_index: 158132552379221, max_n: 262144});
+            this.configure({
+                benchmark: '12',
+                id: Date.now(),
+                x0_delta: 4.000367762006723e-15,
+                y0_delta: 4.000367762006723e-15,
+                x0_start_index: 3278789141870,
+                y0_start_index: 158132552379221,
+                max_n: 262144,
+                color_scale: 208064,
+            });
             this.pushHistory();
             this.start();
         });
@@ -83,7 +101,16 @@ export default class Core {
         this.gui.setKey(null);
         this.interrupt().then(() => {
             this.screen.clear();
-            this.configure({benchmark: '40', id: Date.now(), x0_delta: 2.3159865486788074e-16, y0_delta: 2.3159865486788074e-16, x0_start_index: 56634017984540, y0_start_index: 2731399131086267, max_n: 1048576});
+            this.configure({
+                benchmark: '40',
+                id: Date.now(),
+                x0_delta: 2.3159865486788074e-16,
+                y0_delta: 2.3159865486788074e-16,
+                x0_start_index: 56634017984540,
+                y0_start_index: 2731399131086267,
+                max_n: 1048576,
+                color_scale: 1048576,
+            });
             this.pushHistory();
             this.start();
         });
