@@ -284,7 +284,7 @@ export default class Gui {
                 {value: 0.7,  label: '70%'},
                 {value: 0.8,  label: '80%'},
                 {value: 0.9,  label: '90%'},
-                {value: 1,    label: 'MIN_DEPTH'},
+                {value: 1,    label: 'MIN*DEPTH'},
             ]
         });
         
@@ -311,6 +311,33 @@ export default class Gui {
         this.saveKeyInput.oninput = () => this.calculateSaveEnable();
         this.saveButton = document.querySelector("#save button");
         this.calculateSaveEnable();
+        
+        // Benchmarks
+        document.querySelector("#benchmark01").onclick = () => {
+            this.core.startBenchmark01();
+            return false;
+        };
+        document.querySelector("#benchmark12").onclick = () => {
+            this.core.startBenchmark12();
+            return false;
+        };
+        document.querySelector("#benchmark40").onclick = () => {
+            this.core.startBenchmark40();
+            return false;
+        };
+        document.onkeyup = e => {
+            if (e.altKey && e.ctrlKey) {
+                if (e.code === 'Digit1') {
+                    this.core.startBenchmark01();
+                }
+                else if (e.code === 'Digit2') {
+                    this.core.startBenchmark12();
+                }
+                else if (e.code === 'Digit3') {
+                    this.core.startBenchmark40();
+                }
+            }
+        };
     }
 
     onEvent() {

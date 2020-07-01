@@ -37,6 +37,12 @@ export default class History {
             }
         };
     }
+
+    // Save benchmark.
+    saveBenchmark() {
+        const data = this.historyData[this.currentId];
+        console.info("benchmark done", data);
+    }
     
     // Return a list of saved.
     listSaved() {

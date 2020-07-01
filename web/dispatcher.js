@@ -1,4 +1,5 @@
 import {BLOCK_STARTED, CONFIGURE, FINISHED, INTERRUPT, START} from "./op";
+import {X_SIZE} from "./dimensions";
 
 class Dispatcher {
     constructor() {
@@ -30,19 +31,24 @@ class Dispatcher {
         this.workingCount = 0;
         
         // create one block per line to start (ok we need common class, so we will need to build this js soon).
-        for (let y = 0; y < y_size; ++y) {
-            this.blocks.push({
-                id,
-                x_start: 0,
-                y_start: y,
-                x_size,
-                y_size: 1,
-                x0_start_index,
-                x0_delta,
-                y0_start_index: y0_start_index + y,
-                y0_delta,
-                max_n
-            });
+        const y_delta = 1;
+        const x_delta = X_SIZE;
+        if (y_size % y_delta !== 0 || x_size % x_delta !== 0) throw new Error("y_size must be multiple of y_delta and x_size must be multiple of x_delta");
+        for (let y = 0; y < y_size; y += y_delta) {
+            for (let x = 0; x < x_size; x += x_delta) {
+                this.blocks.push({
+                    id,
+                    x_start: x,
+                    y_start: y,
+                    x_size: x_delta,
+                    y_size: y_delta,
+                    x0_start_index: x0_start_index + x,
+                    x0_delta,
+                    y0_start_index: y0_start_index + y,
+                    y0_delta,
+                    max_n
+                });
+            }
         }
         this.workers.forEach((w, i) => this.postBlock(i));
     }
