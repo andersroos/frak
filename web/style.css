@@ -44,8 +44,18 @@ th {
     text-align: left;
 }
 
+tbody tr:hover {
+    font-weight: bold;
+    cursor: pointer;
+}
+
 td.num {
     text-align: right;
+}
+
+td.remove {
+    color: red;
+    font-weight: bold;
 }
 
 button {

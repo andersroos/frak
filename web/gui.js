@@ -337,8 +337,14 @@ export default class Gui {
         });
         const rows = saved.getElementsByTagName("tr");
         list.forEach((item, i) => {
-            rows[i].onclick = () => {
-                this.core.startFromSaved(this.history.getSaved(item.key));
+            const row = rows[i];
+            row.onclick = () => {
+                const data = this.history.getSaved(item.key);
+                if (data) this.core.startFromSaved(data);
+            };
+            row.querySelector(".remove").onclick = () => {
+                this.history.removeSaved(item.key);
+                this.setKey(null);
             };
         });
         this.calculateSaveEnable();

@@ -83,7 +83,9 @@ export default class History {
     }
     
     // Remove fractal from persistent storage.
-    remove(key) {
+    removeSaved(key) {
+        delete this.savedData[key];
+        this.onChanged();
     }
     
 }
