@@ -18,92 +18,99 @@ export default class Core {
     // Setting max n will cause immediate recalculation.
     setMaxN(max_n) {
         console.info("changing max_n", max_n);
-        this.interrupt();
-        this.configure({max_n});
-        this.history.update({id: this.id, max_n});
-        this.start();
+        this.interrupt().then(() => {
+            this.configure({max_n});
+            this.history.update({id: this.id, max_n});
+            this.start();
+        });
     }
     
     // Called by zoom event from gui.
     zoom(x, y, x_size, y_size) {
         console.info("zooming", x, y, x_size, y_size);
         this.gui.setKey(null);
-        this.interrupt();
-        const x0_delta = this.x0_delta * x_size / X_SIZE;
-        const y0_delta = this.y0_delta * y_size / Y_SIZE;
-        this.configure({
-            id: Date.now(),
-            x0_start_index: Math.round((this.x0_start_index + x) * this.x0_delta / x0_delta),
-            x0_delta,
-            y0_start_index: Math.round((this.y0_start_index + y) * this.y0_delta / y0_delta),
-            y0_delta,
+        this.interrupt().then(() => {
+            const x0_delta = this.x0_delta * x_size / X_SIZE;
+            const y0_delta = this.y0_delta * y_size / Y_SIZE;
+            this.configure({
+                id: Date.now(),
+                x0_start_index: Math.round((this.x0_start_index + x) * this.x0_delta / x0_delta),
+                x0_delta,
+                y0_start_index: Math.round((this.y0_start_index + y) * this.y0_delta / y0_delta),
+                y0_delta,
+            });
+            this.screen.clear();
+            this.pushHistory();
+            this.start();
         });
-        this.screen.clear();
-        this.pushHistory();
-        this.start();
     }
     
     // Start a calculation from history, take only coordinates and keep rest as is, updating history record with current max_n
     startFromHistory({x0_start_index, x0_delta, y0_start_index, y0_delta, id}) {
         console.info("starting from back/forward", id);
         this.gui.setKey(null);
-        this.interrupt();
-        this.configure({id, x0_start_index, x0_delta, y0_start_index, y0_delta});
-        this.history.update({id, max_n: this.max_n});
-        this.start();
+        this.interrupt().then(() => {
+            this.configure({id, x0_start_index, x0_delta, y0_start_index, y0_delta});
+            this.history.update({id, max_n: this.max_n});
+            this.start();
+        });
     }
 
     startBenchmark01() {
         console.info("starting benchmark 01 (chrome-js with 1 worker takes ~1s)");
         this.gui.setKey(null);
-        this.interrupt();
-        this.screen.clear();
-        this.configure({benchmark: '01', id: Date.now(), x0_delta: 0.00014425531844608486 , y0_delta: 0.00014425531844608486, x0_start_index: -8410, y0_start_index: -2206, max_n: 2560});
-        this.pushHistory();
-        this.start();
+        this.interrupt().then(() => {
+            this.screen.clear();
+            this.configure({benchmark: '01', id: Date.now(), x0_delta: 0.00014425531844608486 , y0_delta: 0.00014425531844608486, x0_start_index: -8410, y0_start_index: -2206, max_n: 2560});
+            this.pushHistory();
+            this.start();
+        });
     }
     
     startBenchmark12() {
         console.info("starting benchmark 12 (chrome-js with 24 worker takes ~12s)");
         this.gui.setKey(null);
-        this.interrupt();
-        this.screen.clear();
-        this.configure({benchmark: '12', id: Date.now(), x0_delta: 4.000367762006723e-15, y0_delta: 4.000367762006723e-15, x0_start_index: 3278789141870, y0_start_index: 158132552379221, max_n: 262144});
-        this.pushHistory();
-        this.start();
+        this.interrupt().then(() => {
+            this.screen.clear();
+            this.configure({benchmark: '12', id: Date.now(), x0_delta: 4.000367762006723e-15, y0_delta: 4.000367762006723e-15, x0_start_index: 3278789141870, y0_start_index: 158132552379221, max_n: 262144});
+            this.pushHistory();
+            this.start();
+        });
     }
     
     startBenchmark40() {
         console.info("starting benchmark 40 (chrome-js with 24 worker takes ~40s)");
         this.gui.setKey(null);
-        this.interrupt();
-        this.screen.clear();
-        this.configure({benchmark: '40', id: Date.now(), x0_delta: 2.3159865486788074e-16, y0_delta: 2.3159865486788074e-16, x0_start_index: 56634017984540, y0_start_index: 2731399131086267, max_n: 1048576});
-        this.pushHistory();
-        this.start();
+        this.interrupt().then(() => {
+            this.screen.clear();
+            this.configure({benchmark: '40', id: Date.now(), x0_delta: 2.3159865486788074e-16, y0_delta: 2.3159865486788074e-16, x0_start_index: 56634017984540, y0_start_index: 2731399131086267, max_n: 1048576});
+            this.pushHistory();
+            this.start();
+        });
     }
     
     // Start a calculation from saved data, using data that affects looks but no other.
     startFromSaved({key, x0_start_index, x0_delta, y0_start_index, y0_delta, colors, color_cycle, color_scale, color_offset, max_n}) {
         console.info("starting from saved", key);
         this.gui.setKey(key);
-        this.interrupt();
-        this.configure({
-            id: Date.now(),
-            x0_start_index,
-            x0_delta,
-            y0_start_index,
-            y0_delta,
-            max_n,
-            colors,
-            color_cycle,
-            color_scale,
-            color_offset,
+        this.interrupt().then(() => {
+            this.configure({
+                id: Date.now(),
+                x0_start_index,
+                x0_delta,
+                y0_start_index,
+                y0_delta,
+                max_n,
+                colors,
+                color_cycle,
+                color_scale,
+                color_offset,
+            });
+            this.gui.maxNInput.setValue(max_n);
+            this.screen.clear();
+            this.pushHistory();
+            this.start();
         });
-        this.gui.maxNInput.setValue(max_n);
-        this.screen.clear();
-        this.pushHistory();
-        this.start();
     }
     
     // Configure the next fractal run.
@@ -174,15 +181,25 @@ export default class Core {
         this.gui.onEvent();
     }
 
+    // Interrupt will return a promise that is resolved when workers are finished.
     interrupt() {
         if (!this.id) {
-            return;
+            return Promise.resolve();;
         }
         console.info("interrupting", this.id);
         this.dispatcher.postMessage({id: this.id, op: INTERRUPT});
+        const done = Boolean(this.endTime);
         this.endTime = performance.now();
         this.benchmark = null;
         this.gui.onEvent();
+        return new Promise(resolve => {
+            if (done) {
+                resolve();
+            }
+            else {
+                this.interruptResolve = resolve;
+            }
+        });
     }
     
     getElapsedTime() {
@@ -198,6 +215,10 @@ export default class Core {
         if (this.benchmark) {
             this.history.saveBenchmark();
             this.benchmark = null;
+        }
+        if (this.interruptResolve) {
+            this.interruptResolve();
+            this.interruptResolve = null;
         }
         this.gui.onFinished(statistics);
     }
