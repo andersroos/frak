@@ -113,11 +113,11 @@ class ValueWheelLocalStorage {
 
 class OptionWheelLocalStorage {
     
-    constructor({inputId, options, onSelect}) {
+    constructor({inputId, options, onChange}) {
         this.inputId = inputId;
         this.options = options;
         this.selected = 0;
-        this.onSelect = onSelect;
+        this.onChange = onChange;
 
         const element = document.getElementById(inputId);
         element.onwheel = this.onWheel.bind(this);
@@ -127,7 +127,6 @@ class OptionWheelLocalStorage {
     }
     
     setKey(key) {
-        if (this.inputId === "colors") console.info("setting key", this.inputId, key);
         this.selected = 0;
         for (let i = 0; i < this.options.length; ++i) {
             if (this.getKey(i) === key) {
@@ -135,14 +134,11 @@ class OptionWheelLocalStorage {
                 break;
             }
         }
-        if (this.inputId === "colors") console.info("key is now", this.inputId, this.getKey(), this.selected);
         this.onSelectedChanged();
     }
     
     getKey(i) {
-        const res = this.options[i === undefined ? this.selected : i].label.replace(/\s/, '');
-        if (i === undefined && this.inputId === "colors") console.info("returning key", res, "i", i, "selected", this.selected);
-        return res;
+        return this.options[i === undefined ? this.selected : i].label.replace(/\s/, '');
     }
     
     onWheel(event) {
@@ -152,15 +148,15 @@ class OptionWheelLocalStorage {
         else {
             this.selected = Math.min(this.selected + 1, this.options.length - 1);
         }
-        if (this.inputId === "colors") console.info("wheel selected is now", this.getKey(), this.selected);
         this.onSelectedChanged()
     }
     
     onSelectedChanged() {
         const option = this.options[this.selected];
         this.element.textContent = option.label;
-        localStorage.setItem(this.inputId, this.getKey());
-        this.onSelect(option.value);
+        const key = this.getKey();
+        localStorage.setItem(this.inputId, key);
+        this.onChange(option.value, key);
     }
 }
 
@@ -224,8 +220,9 @@ export default class Gui {
         // Colors.
         this.colorsInput = new OptionWheelLocalStorage({
             inputId: 'colors',
-            onSelect: v => {
-                this.colors.parse(v);
+            onChange: (value, key) => {
+                this.colors.parse(value);
+                this.history.update({id: this.core.id, colors: key});
                 this.onEvent();
             },
             options: [
@@ -238,6 +235,11 @@ export default class Gui {
         // Color cycle.
         this.colorCycleInput = new OptionWheelLocalStorage({
             inputId: 'color-cycle',
+            onChange: (value, key) => {
+                this.colors.setCycleTime(value * 1000);
+                this.history.update({id: this.core.id, color_cycle: key});
+                this.onEvent();
+            },
             options: [
                 {value: 0,  label: 'OFF'},
                 {value: 10, label: '10 S'},
@@ -246,17 +248,14 @@ export default class Gui {
                 {value: 2,  label: '2 S'},
                 {value: 1,  label: '1 S'},
             ],
-            onSelect: v => {
-                this.colors.setCycleTime(v * 1000);
-                this.onEvent();
-            }
         });
         
-        // Color scaling.
-        this.colorScalingInput = new ValueWheelLocalStorage({
-            inputId: 'color-scaling',
-            onChange: v => {
-                this.colors.setScaleLength(v);
+        // Color scale.
+        this.colorScaleInput = new ValueWheelLocalStorage({
+            inputId: 'color-scale',
+            onChange: value => {
+                this.colors.setScaleLength(value);
+                this.history.update({id: this.core.id, color_scale: value});
                 this.onEvent();
             },
             newValue: (v, direction) => direction ? Math.max(4, v / QBRT_2) : v * QBRT_2,
@@ -269,8 +268,9 @@ export default class Gui {
         // Color offset.
         this.colorOffsetImput = new OptionWheelLocalStorage({
             inputId: 'color-offset',
-            onSelect: v => {
-                this.colors.setColorOffset(v);
+            onChange: (value, key) => {
+                this.colors.setColorOffset(value);
+                this.history.update({id: this.core.id, color_offset: key});
                 this.onEvent();
             },
             options: [
@@ -337,13 +337,19 @@ export default class Gui {
         });
         const rows = saved.getElementsByTagName("tr");
         list.forEach((item, i) => {
-            rows[i].onclick = () => this.core.startFromSaved(this.history.getSaved(item.key));
+            rows[i].onclick = () => {
+                this.core.startFromSaved(this.history.getSaved(item.key));
+            };
         });
         this.calculateSaveEnable();
     }
     
     getKey() {
         return this.saveKeyInput.value.trim().toLowerCase();
+    }
+    
+    setKey(key) {
+        this.saveKeyInput.value = key ? key : '';
     }
 
     calculateSaveEnable() {

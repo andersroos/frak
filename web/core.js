@@ -27,6 +27,7 @@ export default class Core {
     // Called by zoom event from gui.
     zoom(x, y, x_size, y_size) {
         console.info("zooming", x, y, x_size, y_size);
+        this.gui.setKey(null);
         this.interrupt();
         this.configure({
             id: Date.now(),
@@ -39,66 +40,67 @@ export default class Core {
         this.pushHistory();
         this.start();
     }
-
-    // Start a calculation from history, take only coordinates and keep rest as is.
+    
+    // Start a calculation from history, take only coordinates and keep rest as is, updating history record with current max_n
     startFromHistory({x0_start, x0_delta, y0_start, y0_delta, id}) {
         console.info("starting from back/forward", id);
+        this.gui.setKey(null);
         this.interrupt();
         this.configure({id, x0_start, x0_delta, y0_start, y0_delta});
-        this.history.update({
-            id,
-            max_n: this.max_n,
-            workers: this.gui.workerCountInput.getValue(),
-        });
+        this.history.update({id, max_n: this.max_n});
         this.start();
     }
     
-    // Start a calculation from saved data.
-    startFromSaved({key, x0_start, x0_delta, y0_start, y0_delta, colors, max_n}) {
+    // Start a calculation from saved data, using data that affects looks but no other.
+    startFromSaved({key, x0_start, x0_delta, y0_start, y0_delta, colors, color_cycle, color_scale, color_offset, max_n}) {
         console.info("starting from saved", key);
+        this.gui.setKey(key);
         this.interrupt();
         this.configure({
             id: Date.now(),
-            key,
             x0_start,
             x0_delta,
             y0_start,
             y0_delta,
             max_n,
+            colors,
+            color_cycle,
+            color_scale,
+            color_offset,
         });
-        this.gui.colorsInput.setKey(colors);
+        this.pushHistory();
         this.start();
     }
     
     // Configure the next fractal run.
-    configure({x0_start, x0_delta, y0_start, y0_delta, workers, max_n, id}) {
+    configure({x0_start, x0_delta, y0_start, y0_delta, max_n, id, colors, color_scale, color_offset, color_cycle}) {
         if (x0_start !== undefined && x0_delta !== undefined && y0_start !== undefined && y0_delta !== undefined) {
             this.x0_start = x0_start;
             this.x0_delta = x0_delta;
             this.y0_start = y0_start;
             this.y0_delta = y0_delta;
         }
-        if (max_n !== undefined) {
-            this.max_n = max_n;
-        }
-        if (workers) {
-            this.gui.workerCountInput.setValue(workers);
-        }
+        if (max_n !== undefined) this.max_n = max_n;
         if (id !== undefined) {
             if (this.endTime === null) {
                 throw new Error('id can not be changed while running');
             }
             this.id = id;
         }
+        if (colors !== undefined) this.gui.colorsInput.setKey(colors);
+        if (color_scale !== undefined) this.gui.colorScaleInput.setValue(color_scale);
+        if (color_offset !== undefined) this.gui.colorOffsetImput.setKey(color_offset);
+        if (color_cycle !== undefined) this.gui.colorCycleInput.setKey(color_cycle);
     }
 
-    // Push the current set coordinates and config to history.
+    // Push the current set coordinates and config to history (need color data and max_n since history data is used when saving).
     pushHistory() {
         this.history.push({
             id: this.id,
-            workers: this.gui.workerCountInput.getValue(),
-            type: 'chrome*js',
             colors: this.gui.colorsInput.getKey(),
+            color_scale: this.gui.colorScaleInput.getValue(),
+            color_offset: this.gui.colorOffsetImput.getKey(),
+            color_cycle: this.gui.colorCycleInput.getKey(),
             x0_start: this.x0_start,
             x0_delta: this.x0_delta,
             y0_start: this.y0_start,
@@ -114,10 +116,12 @@ export default class Core {
         
         this.startTime = performance.now();
         this.endTime = null;
+        this.workersAtStart = this.gui.workerCountInput.getValue();
+        this.typeAtStart = 'chrome*js';
 
-        this.dispatcher.postMessage({op: CONFIGURE, worker_count: this.gui.workerCountInput.getValue()});
+        this.dispatcher.postMessage({op: CONFIGURE, worker_count: this.workersAtStart});
         
-        console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n);
+        console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n, this.workersAtStart, this.typeAtStart);
         
         this.dispatcher.postMessage({
             id: this.id,
