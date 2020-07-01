@@ -23,7 +23,7 @@ class Dispatcher {
     }
     
     onStart(params) {
-        const {id, x_size, y_size, max_n, x0_start, x0_delta, y0_start, y0_delta} = params;
+        const {id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta} = params;
 
         this.blocks = [];
         this.id = id;
@@ -37,9 +37,9 @@ class Dispatcher {
                 y_start: y,
                 x_size,
                 y_size: 1,
-                x0_start,
+                x0_start_index,
                 x0_delta,
-                y0_start: y0_start + y0_delta * y,
+                y0_start_index: y0_start_index + y,
                 y0_delta,
                 max_n
             });

@@ -29,12 +29,14 @@ export default class Core {
         console.info("zooming", x, y, x_size, y_size);
         this.gui.setKey(null);
         this.interrupt();
+        const x0_delta = this.x0_delta * x_size / X_SIZE;
+        const y0_delta = this.y0_delta * y_size / Y_SIZE;
         this.configure({
             id: Date.now(),
-            x0_start: this.x0_start + x * this.x0_delta,
-            x0_delta: this.x0_delta * x_size / X_SIZE,
-            y0_start: this.y0_start + y * this.y0_delta,
-            y0_delta: this.y0_delta * y_size / Y_SIZE,
+            x0_start_index: Math.round((this.x0_start_index + x) * this.x0_delta / x0_delta),
+            x0_delta,
+            y0_start_index: Math.round((this.y0_start_index + y) * this.y0_delta / y0_delta),
+            y0_delta,
         });
         this.screen.clear();
         this.pushHistory();
@@ -42,25 +44,25 @@ export default class Core {
     }
     
     // Start a calculation from history, take only coordinates and keep rest as is, updating history record with current max_n
-    startFromHistory({x0_start, x0_delta, y0_start, y0_delta, id}) {
+    startFromHistory({x0_start_index, x0_delta, y0_start_index, y0_delta, id}) {
         console.info("starting from back/forward", id);
         this.gui.setKey(null);
         this.interrupt();
-        this.configure({id, x0_start, x0_delta, y0_start, y0_delta});
+        this.configure({id, x0_start_index, x0_delta, y0_start_index, y0_delta});
         this.history.update({id, max_n: this.max_n});
         this.start();
     }
     
     // Start a calculation from saved data, using data that affects looks but no other.
-    startFromSaved({key, x0_start, x0_delta, y0_start, y0_delta, colors, color_cycle, color_scale, color_offset, max_n}) {
+    startFromSaved({key, x0_start_index, x0_delta, y0_start_index, y0_delta, colors, color_cycle, color_scale, color_offset, max_n}) {
         console.info("starting from saved", key);
         this.gui.setKey(key);
         this.interrupt();
         this.configure({
             id: Date.now(),
-            x0_start,
+            x0_start_index,
             x0_delta,
-            y0_start,
+            y0_start_index,
             y0_delta,
             max_n,
             colors,
@@ -68,16 +70,17 @@ export default class Core {
             color_scale,
             color_offset,
         });
+        this.screen.clear();
         this.pushHistory();
         this.start();
     }
     
     // Configure the next fractal run.
-    configure({x0_start, x0_delta, y0_start, y0_delta, max_n, id, colors, color_scale, color_offset, color_cycle}) {
-        if (x0_start !== undefined && x0_delta !== undefined && y0_start !== undefined && y0_delta !== undefined) {
-            this.x0_start = x0_start;
+    configure({x0_start, x0_start_index, x0_delta, y0_start, y0_start_index, y0_delta, max_n, id, colors, color_scale, color_offset, color_cycle}) {
+        if (x0_start_index !== undefined && x0_delta !== undefined && y0_start_index !== undefined && y0_delta !== undefined) {
+            this.x0_start_index = x0_start_index;
             this.x0_delta = x0_delta;
-            this.y0_start = y0_start;
+            this.y0_start_index = y0_start_index;
             this.y0_delta = y0_delta;
         }
         if (max_n !== undefined) this.max_n = max_n;
@@ -101,35 +104,35 @@ export default class Core {
             color_scale: this.gui.colorScaleInput.getValue(),
             color_offset: this.gui.colorOffsetImput.getKey(),
             color_cycle: this.gui.colorCycleInput.getKey(),
-            x0_start: this.x0_start,
+            x0_start_index: this.x0_start_index,
             x0_delta: this.x0_delta,
-            y0_start: this.y0_start,
+            y0_start_index: this.y0_start_index,
             y0_delta: this.y0_delta,
             max_n: this.max_n,
         });
     }
     
     start() {
-        if (this.max_n === undefined || this.x0_start === undefined) {
+        if (this.max_n === undefined || this.x0_start_index === undefined) {
             return;
         }
         
         this.startTime = performance.now();
         this.endTime = null;
         this.workersAtStart = this.gui.workerCountInput.getValue();
-        this.typeAtStart = 'chrome*js';
+        this.backendAtStart = 'chrome*js';
 
         this.dispatcher.postMessage({op: CONFIGURE, worker_count: this.workersAtStart});
         
-        console.info("starting", this.id, this.x0_start, this.x0_delta, this.y0_start, this.y0_delta, this.max_n, this.workersAtStart, this.typeAtStart);
+        console.info("starting", this.id, this.x0_start_index, this.x0_delta, this.y0_start_index, this.y0_delta, this.max_n, this.workersAtStart, this.backendAtStart);
         
         this.dispatcher.postMessage({
             id: this.id,
             x_size: X_SIZE,
             y_size: Y_SIZE,
-            x0_start: this.x0_start,
+            x0_start_index: this.x0_start_index,
             x0_delta: this.x0_delta,
-            y0_start: this.y0_start,
+            y0_start_index: this.y0_start_index,
             y0_delta: this.y0_delta,
             max_n: this.max_n,
             op: START,

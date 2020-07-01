@@ -42,6 +42,15 @@ registry
 * Js client that will fake no registry if no registry.
 * Node server.
 
+# Calculations
+
+The gui and core controls the location of the fractal by specifying x0_start_index, x0_delta, y0_start_index and 
+y0_delta. The coordinates calcuated is then (x0_start_index * x0_delta, y0_start_index * y0_delta) to 
+((x0_start_index + X_SIZE) * x0_delta, (y0_start_index + Y_SIZE) * y0_delta).
+
+This is to be able to keep good precision with only doubles when zooming. Backends can then use whatever precision
+needed when calculating.
+
 # Feature Requests
 
 * Use higher precision in calculations.
