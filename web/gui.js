@@ -72,15 +72,16 @@ class MouseState {
     }
 }
 
+
 class ValueWheelLocalStorage {
-    constructor({key, onChange, newValue, formatValue, defaultValue}) {
-        this.key = key;
-        this.value = Number.parseFloat(localStorage.getItem(key) || defaultValue);
+    constructor({inputId, onChange, newValue, formatValue, defaultValue}) {
+        this.inputId = inputId;
+        this.value = Number.parseFloat(localStorage.getItem(inputId) || defaultValue);
         this.onChange = onChange;
         this.newValue = newValue;
         this.formatValue = formatValue;
 
-        const element = document.getElementById(key);
+        const element = document.getElementById(inputId);
         element.onwheel = this.onWheel.bind(this);
         
         this.element = element.getElementsByClassName("value")[0];
@@ -104,29 +105,29 @@ class ValueWheelLocalStorage {
     
     onValueChanged() {
         this.element.textContent = this.formatValue(this.value);
-        localStorage.setItem(this.key, this.value.toString());
+        localStorage.setItem(this.inputId, this.value.toString());
         if (this.onChange) this.onChange(this.value);
     }
 }
 
+
 class OptionWheelLocalStorage {
     
-    constructor({key, options, onSelect}) {
-        this.key = key;
+    constructor({inputId, options, onSelect}) {
+        this.inputId = inputId;
         this.options = options;
-        this.setKey(localStorage.getItem(key));
         this.selected = 0;
         this.onSelect = onSelect;
 
-        const element = document.getElementById(key);
+        const element = document.getElementById(inputId);
         element.onwheel = this.onWheel.bind(this);
         
         this.element = element.getElementsByClassName("value")[0];
-        
-        this.onSelectedChanged();
+        this.setKey(localStorage.getItem(inputId));
     }
     
     setKey(key) {
+        if (this.inputId === "colors") console.info("setting key", this.inputId, key);
         this.selected = 0;
         for (let i = 0; i < this.options.length; ++i) {
             if (this.getKey(i) === key) {
@@ -134,10 +135,14 @@ class OptionWheelLocalStorage {
                 break;
             }
         }
+        if (this.inputId === "colors") console.info("key is now", this.inputId, this.getKey(), this.selected);
+        this.onSelectedChanged();
     }
     
     getKey(i) {
-        return this.options[i === undefined ? this.selected : i].label.replace(/\s/, '');
+        const res = this.options[i === undefined ? this.selected : i].label.replace(/\s/, '');
+        if (i === undefined && this.inputId === "colors") console.info("returning key", res, "i", i, "selected", this.selected);
+        return res;
     }
     
     onWheel(event) {
@@ -147,13 +152,14 @@ class OptionWheelLocalStorage {
         else {
             this.selected = Math.min(this.selected + 1, this.options.length - 1);
         }
+        if (this.inputId === "colors") console.info("wheel selected is now", this.getKey(), this.selected);
         this.onSelectedChanged()
     }
     
     onSelectedChanged() {
         const option = this.options[this.selected];
         this.element.textContent = option.label;
-        localStorage.setItem(this.key, this.getKey(this.selected));
+        localStorage.setItem(this.inputId, this.getKey());
         this.onSelect(option.value);
     }
 }
@@ -196,7 +202,7 @@ export default class Gui {
 
         // Max n.
         this.maxNInput = new ValueWheelLocalStorage({
-            key: 'max-n',
+            inputId: 'max-n',
             onChange: v => {
                 this.core.setMaxN(Math.round(v));
                 // TODO Changing max n should not be a start, it should be some sort of refining operation?
@@ -209,7 +215,7 @@ export default class Gui {
 
         // Worker count.
         this.workerCountInput = new ValueWheelLocalStorage({
-            key: 'worker-count',
+            inputId: 'worker-count',
             newValue: (v, direction) => direction ? Math.max(1, v - 1) : v + 1,
             formatValue: v => formatInt(v, {padTo: 10, space: 3}),
             defaultValue: 24,
@@ -217,7 +223,7 @@ export default class Gui {
         
         // Colors.
         this.colorsInput = new OptionWheelLocalStorage({
-            key: 'colors',
+            inputId: 'colors',
             onSelect: v => {
                 this.colors.parse(v);
                 this.onEvent();
@@ -231,7 +237,7 @@ export default class Gui {
         
         // Color cycle.
         this.colorCycleInput = new OptionWheelLocalStorage({
-            key: 'color-cycle',
+            inputId: 'color-cycle',
             options: [
                 {value: 0,  label: 'OFF'},
                 {value: 10, label: '10 S'},
@@ -248,7 +254,7 @@ export default class Gui {
         
         // Color scaling.
         this.colorScalingInput = new ValueWheelLocalStorage({
-            key: 'color-scaling',
+            inputId: 'color-scaling',
             onChange: v => {
                 this.colors.setScaleLength(v);
                 this.onEvent();
@@ -262,7 +268,7 @@ export default class Gui {
 
         // Color offset.
         this.colorOffsetImput = new OptionWheelLocalStorage({
-            key: 'color-offset',
+            inputId: 'color-offset',
             onSelect: v => {
                 this.colors.setColorOffset(v);
                 this.onEvent();
