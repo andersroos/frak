@@ -1,6 +1,9 @@
 
+const storeSatedInServer = saved => {
+    localStorage.setItem('saved', JSON.stringify(saved));
+};
 
-const loadFromServer = () => {
+const loadSavedFromServer = () => {
     return new Promise((resolve, reject) => {
         const saved = JSON.parse(localStorage.getItem('saved') || '{}');
         resolve(saved);
@@ -16,7 +19,7 @@ export default class History {
         this.historyData = {};
         this.savedData = {};
         
-        loadFromServer().then(saved => {
+        loadSavedFromServer().then(saved => {
             Object.entries(saved).forEach(([key, e]) => {
                 this.savedData[key] = e;
             });
@@ -79,12 +82,14 @@ export default class History {
     save(key) {
         console.info("saving", key);
         this.savedData[key] = Object.assign(this.savedData[key] || {}, this.historyData[this.currentId] || {}, {key: key});
+        storeSatedInServer(this.savedData);
         this.onChanged();
     }
     
     // Remove fractal from persistent storage.
     removeSaved(key) {
         delete this.savedData[key];
+        storeSatedInServer(this.savedData);
         this.onChanged();
     }
     
