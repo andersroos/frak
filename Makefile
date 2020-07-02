@@ -9,6 +9,7 @@ default: build
 
 init:
 	cd web && npm install
+	npm install -g nodemon
 	docker pull trzeci/emscripten
 
 c64-build:
@@ -27,7 +28,10 @@ build: c64-build web-build
 web-run:
 	cd web && npm run dev-server
 
-run: web-run
+registry-run:
+	cd registry && nodemon registry.js
+
+run: web-run registry-run
 
 clean:
 	rm -f web/*.bc web/corelib.wasm web/corelib.js
