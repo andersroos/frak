@@ -28,6 +28,7 @@ EMSCRIPTEN_BINDINGS(corelib) {
       .function("paint", &Screen::paint)
       .function("getColorRgb", &Screen::get_color_rgb)
       .function("clear", &Screen::clear)
+      .function("clearInProgress", &Screen::clear_in_progress)
       .function("fillRect", &Screen::fill_rect)
       .function("refImageBytes", &Screen::ref_image_bytes)
       .function("refData", &Screen::ref_data)

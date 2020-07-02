@@ -73,6 +73,14 @@ struct Screen {
       }
    }
 
+   void clear_in_progress() {
+      for (uint32_t i = 0; i < y_size * x_size; ++i) {
+         if (data[i] == CALCULATING) {
+            data[i] = NOT_CALCULATED;
+         }
+      }
+   }
+   
    // TODO Returning by value like this creates a memory leak, let js send an array to be filled.
    Statistics get_statistics() const {
       Statistics res;

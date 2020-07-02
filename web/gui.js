@@ -74,10 +74,11 @@ class MouseState {
 
 
 class ValueWheelLocalStorage {
-    constructor({inputId, onChange, newValue, formatValue, defaultValue}) {
+    constructor({inputId, onChange, onChangeByUser, newValue, formatValue, defaultValue}) {
         this.inputId = inputId;
         this.value = Number.parseFloat(localStorage.getItem(inputId) || defaultValue);
         this.onChange = onChange;
+        this.onChangeByUser = onChangeByUser;
         this.newValue = newValue;
         this.formatValue = formatValue;
 
@@ -100,7 +101,8 @@ class ValueWheelLocalStorage {
     
     onWheel(event) {
         this.value = this.newValue(this.value, event.deltaY > 0);
-        this.onValueChanged()
+        this.onValueChanged();
+        if (this.onChangeByUser) this.onChangeByUser(this.value);
     }
     
     onValueChanged() {
@@ -113,11 +115,12 @@ class ValueWheelLocalStorage {
 
 class OptionWheelLocalStorage {
     
-    constructor({inputId, options, onChange}) {
+    constructor({inputId, options, onChange, onChangeByUser}) {
         this.inputId = inputId;
         this.options = options;
         this.selected = 0;
         this.onChange = onChange;
+        this.onChangeByUser = onChangeByUser;
 
         const element = document.getElementById(inputId);
         element.onwheel = this.onWheel.bind(this);
@@ -148,7 +151,8 @@ class OptionWheelLocalStorage {
         else {
             this.selected = Math.min(this.selected + 1, this.options.length - 1);
         }
-        this.onSelectedChanged()
+        this.onSelectedChanged();
+        if (this.onChangeByUser) this.onChangeByUser(this.getKey());
     }
     
     onSelectedChanged() {
@@ -199,7 +203,7 @@ export default class Gui {
         // Max n.
         this.maxNInput = new ValueWheelLocalStorage({
             inputId: 'max-n',
-            onChange: v => {
+            onChangeByUser: v => {
                 this.core.setMaxN(Math.round(v));
                 // TODO Changing max n should not be a start, it should be some sort of refining operation?
                 this.core.start();
