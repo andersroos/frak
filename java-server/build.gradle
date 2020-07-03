@@ -1,0 +1,16 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.+'
+}
+
+application {
+    mainClassName = 'se.ygram.frak.Main'
+}

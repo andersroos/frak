@@ -13,6 +13,12 @@ web/corelib.wasm
 web/corelib.js
 web/*.bc
 
-# Make
+# make
 Makefile.bak
 
+# java
+java-server/.gradle
+java-server/build
+java-server/gradle
+java-server/gradlew
+java-server/gradlew.bat

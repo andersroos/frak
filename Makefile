@@ -11,6 +11,7 @@ init:
 	cd web && npm install
 	npm install -g nodemon
 	docker pull trzeci/emscripten
+	cd java-server && gradle wrapper --gradle-version 6.5.1
 
 c64-build:
 	make -C c64
@@ -23,15 +24,21 @@ web/corelib.wasm: $(CORELIB_OBJS)
 
 web-build: web/corelib.wasm
 
-build: c64-build web-build
-
 web-run:
 	cd web && npm run dev-server
 
 registry-run:
 	cd registry && nodemon registry.js
 
-run: web-run registry-run
+java-server-build:
+	cd java-server && ./gradlew build
+
+java-server-run:
+	cd java-server && ./gradlew run
+
+build: c64-build web-build
+
+run: web-run registry-run # TODO java-server-run
 
 clean:
 	rm -f web/*.bc web/corelib.wasm web/corelib.js
