@@ -1,4 +1,4 @@
-import {BLOCK_STARTED, CONFIGURE, FINISHED, INTERRUPT, START} from "./op";
+import {BLOCK_STARTED, BLOCK_COMPLETED, COMPLETED, ABORTED, ABORT, START} from "./op";
 import {X_SIZE} from "./dimensions";
 
 class Dispatcher {
@@ -6,28 +6,30 @@ class Dispatcher {
         this.workers = [];
         this.blocks = [];
     }
-    
-    onConfigure(params) {
-        const {worker_count=0} = params;
+
+    createWorker() {
+        const worker = new Worker("worker.js");
+        worker.onmessage = e => this.onBlockCompleted(e.data);
+        return worker;
+    }
+
+    setWorkerCount(worker_count) {
         if (worker_count !== this.workers.length) {
             console.info("dispatcher changing worker count to", worker_count);
             this.workers.slice(worker_count, this.workers.length).forEach(w => w.terminate());
             this.workers.length = worker_count;
             for (let i = 0; i < this.workers.length; ++i) {
                 if (!this.workers[i]) {
-                    const worker = new Worker('worker.js');
-                    worker.onmessage = e => this.onBlockComplete(e.data);
-                    this.workers[i] = worker;
+                    this.workers[i] = this.createWorker();
                 }
             }
         }
     }
     
-    onStart(params) {
-        const {id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta} = params;
+    onStart({id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
+        this.setWorkerCount(workers);
 
         this.blocks = [];
-        this.id = id;
         this.workingCount = 0;
         
         // create one block per line to start (ok we need common class, so we will need to build this js soon).
@@ -53,10 +55,13 @@ class Dispatcher {
         this.workers.forEach((w, i) => this.postBlock(i));
     }
     
-    onInterrupt({id}) {
-        if (this.id === id) {
-            this.blocks = [];
+    onAbort({id}) {
+        this.blocks = [];
+        for (let i = 0; i < this.workers.length; ++i) {
+            this.workers[i].terminate();
+            this.workers[i] = this.createWorker();
         }
+        postMessage({op: ABORTED, id});
     }
     
     postBlock(worker_index) {
@@ -69,14 +74,12 @@ class Dispatcher {
         }
     }
     
-    onBlockComplete(data) {
-        if (data.id === this.id) {
-            this.workingCount--;
-            this.postBlock(data.worker_index);
-            postMessage(data, [data.bytes]);
-            if (this.workingCount === 0) {
-                postMessage({op: FINISHED});
-            }
+    onBlockCompleted(data) {
+        this.workingCount--;
+        this.postBlock(data.worker_index);
+        postMessage(data, [data.bytes]);
+        if (this.workingCount === 0) {
+            postMessage({op: COMPLETED});
         }
     }
 }
@@ -85,10 +88,10 @@ const dispatcher = new Dispatcher();
 
 onmessage = function(event) {
     const params = event.data;
+    console.info("dispatcher got", params);
     switch (params.op) {
-        case CONFIGURE: dispatcher.onConfigure(params); break;
         case START: dispatcher.onStart(params); break;
-        case INTERRUPT: dispatcher.onInterrupt(params); break;
+        case ABORT: dispatcher.onAbort(params); break;
         default: throw new Error(`unkwnon op ${params.op}`);
     }
 };

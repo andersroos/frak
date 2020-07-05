@@ -31,7 +31,7 @@ const suffixes = [
 
 
 const normalizeWithSuffix = number => {
-    if (number === 0) {
+    if (number === 0 || isNaN(number)) {
         return {normalized: number, suffix: ' '};
     }
     
@@ -72,3 +72,19 @@ window.formatFloat = formatFloat;
 
 
 export const calculateWeight = (statistics, max_n) => statistics.infiniteCount * max_n + statistics.sumDepth;
+
+
+export const guessBrowser = () => {
+    if (navigator.userAgent.match(/Chrome\//)) return "chrome";
+    if (navigator.userAgent.match(/Firefox\//)) return "firefox";
+    return "browser";
+}
+
+
+export const guessHardwareConcurrency = () => {
+    const browser = guessBrowser();
+    if (browser === "firefox") {
+        if (navigator.hardwareConcurrency === 16 && navigator.platform === "Linux x86_64") return 24;
+    }
+    return navigator.hardwareConcurrency;
+}

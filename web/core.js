@@ -16,8 +16,8 @@ export default class Core {
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
         this.history = new History(() => this.gui.onHistoryChanged(), data => this.startFromHistory(data));
         this.gui = new Gui(this, this.store, this.screen, this.history, this.backends.listBackends());
-        this.dispatcher = new Worker('dispatcher.js');
-        this.dispatcher.onmessage = e => this.onmessage(e);
+        // this.dispatcher = new Worker('dispatcher.js');
+        // this.dispatcher.onmessage = e => this.onmessage(e);
     }
 
     // Setting max n will cause immediate recalculation.
@@ -61,20 +61,24 @@ export default class Core {
     startBenchmark01() {
         console.info("starting benchmark 01 (chrome-js with 1 worker takes ~1s)");
         this.gui.setKey(null);
-        this.interrupt();
-        this.screen.clear();
-        this.configure({
-            benchmark: '01',
+        this.backends.requestCalculation({
             id: Date.now(),
-            x0_delta: 0.00014425531844608486 ,
+            x0_delta: 0.00014425531844608486,
             y0_delta: 0.00014425531844608486,
             x0_start_index: -8410,
             y0_start_index: -2206,
             max_n: 2560,
-            color_scale: 512,
+            benchmark: "01",
+            onBeforeStart: () => {
+                this.gui.colorScaleInput.setValue(512);
+                this.screen.clear();
+                this.pushHistory();
+            },
+            onAborted: this.onAborted.bind(this),
+            onCompleted: this.onCompleted.bind(this),
+            onBlockStarted: this.onBlockStarted.bind(this),
+            onBlockCompleted: this.onBlockCompleted.bind(this),
         });
-        this.pushHistory();
-        this.start();
     }
     
     startBenchmark12() {
@@ -227,46 +231,39 @@ export default class Core {
         return performance.now() - this.startTime;
     }
     
-    onFinished() {
+    onAborted() {
         const statistics = this.screen.getStatistics();
         this.endTime = performance.now();
-        this.history.update({id: this.id, elapsed: this.endTime - this.startTime, weight: calculateWeight(statistics, this.max_n)});
-        if (this.benchmark) {
-            this.history.saveBenchmark();
-            this.benchmark = null;
+        this.history.update({id: this.id, elapsed: this.endTime - this.startTime, weight: calculateWeight(statistics, this.max_n)}); // TODO remove
+        this.gui.onFinished(statistics);
+    }
+
+    onCompleted({benchmark}) {
+        const statistics = this.screen.getStatistics();
+        this.endTime = performance.now();
+        this.history.update({id: this.id, elapsed: this.endTime - this.startTime, weight: calculateWeight(statistics, this.max_n)}); // TODO rework history
+        if (benchmark) {
+            // TODO this.history.saveBenchmark();
         }
         this.gui.onFinished(statistics);
     }
     
-    onBlockComplete({id, x_start, y_start, x_size, y_size, bytes}) {
-        if (id === this.id) {
-            const blockData = new Uint32Array(bytes);
-            const targetOffset = y_start * X_SIZE + x_start;
-            const screenData = this.screen.refData();
-            for (let y = 0; y < y_size; ++y) {
-                const sourceOffset = y * x_size;
-                screenData.set(blockData.subarray(sourceOffset, sourceOffset + x_size), targetOffset + y * X_SIZE);
-            }
+    onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes}) {
+        const blockData = new Uint32Array(bytes);
+        const targetOffset = y_start * X_SIZE + x_start;
+        const screenData = this.screen.refData();
+        for (let y = 0; y < y_size; ++y) {
+            const sourceOffset = y * x_size;
+            screenData.set(blockData.subarray(sourceOffset, sourceOffset + x_size), targetOffset + y * X_SIZE);
         }
         this.gui.onEvent();
     }
 
     onBlockStarted({id, x_start, y_start, x_size, y_size}) {
-        if (id === this.id) {
-            // noinspection JSSuspiciousNameCombination
-            this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
-        }
+        // noinspection JSSuspiciousNameCombination
+        this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
         this.gui.onEvent();
     }
 
-    onmessage(event) {
-        const params = event.data;
-        switch (params.op) {
-            case BLOCK_COMPLETE: this.onBlockComplete(params); break;
-            case BLOCK_STARTED: this.onBlockStarted(params); break;
-            case FINISHED: this.onFinished(params); break;
-            default: throw new Error(`unkwnon op ${params.op}`);
-        }
-    }
 }
 

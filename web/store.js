@@ -1,3 +1,11 @@
+export const STATE_WAITING = "waiting";
+export const STATE_WAITING_STARTUP = "waiting-startup";
+export const STATE_WAITING_OFFLINE = "waiting-offline";
+export const STATE_WAITING_COMPLETED = "waiting-completed";
+export const STATE_WAITING_ABORTED = "waiting-aborted";
+export const STATE_ABORTING = "aborting";
+export const STATE_CALCULATING = "calculating";
+
 export const BACKEND_KEY = "backend";
 
 export default class Store {
@@ -6,6 +14,8 @@ export default class Store {
         this.subscriberId = 0;
         this.subscribers = {}
         this.createProperty(BACKEND_KEY, "java");
+        this.createProperty("state", STATE_WAITING_STARTUP);
+        this.createProperty("workers", 24);
     }
 
     createProperty(key, defaultValue) {
@@ -23,10 +33,13 @@ export default class Store {
 
     get(key, defaultValue) {
         const value = localStorage.getItem(key);
-        if (value === undefined && defaultValue !== undefined) {
-            localStorage.put(key, JSON.stringify(defaultValue));
-            Object.values(this.subscribers).forEach(onChange => onChange(key, undefined, defaultValue));
-            return defaultValue;
+        if (value === null) {
+            if (defaultValue !== undefined) {
+                localStorage.setItem(key, JSON.stringify(defaultValue));
+                Object.values(this.subscribers).forEach(onChange => onChange(key, undefined, defaultValue));
+                return defaultValue;
+            }
+            return value;
         }
         return JSON.parse(value);
     }
