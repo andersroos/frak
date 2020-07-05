@@ -1,11 +1,12 @@
 
 
 export class WheelSelectStore {
-    constructor({store, id, onChange, options}) {
+    constructor({store, id, onChange, options, formatKey}) {
         this.store = store;
         this.id = id;
         this.onChange = onChange;
         this.options = options;
+        this.formatKey = formatKey;
 
         console.info(id, options);
 
@@ -42,7 +43,7 @@ export class WheelSelectStore {
         }
         const option = this.options[this.selected];
         console.info(this.id, "onKeyChanged", key, option);
-        this.element.textContent = option.key;
+        this.element.textContent = this.formatKey ? this.formatKey(option.key) : option.key;
         if (this.onChange) this.onChange(option.key, option.value);
     }
 }

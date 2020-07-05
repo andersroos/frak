@@ -22,7 +22,13 @@ public class Dispatcher {
     @OnOpen
     public void onOpen(Session session) throws IOException {
         logger.info("open " + session.getUserProperties().toString());
-        session.getBasicRemote().sendText(Json.createObjectBuilder().add("op", "config").add("max_wokers", Runtime.getRuntime().availableProcessors()).build().toString());
+        session.getBasicRemote().sendText(
+            Json.createObjectBuilder()
+                .add("op", "config")
+                .add("max_wokers", Runtime.getRuntime().availableProcessors())
+                .build()
+                .toString()
+        );
     }
 
     @OnMessage
@@ -31,11 +37,12 @@ public class Dispatcher {
         return switch (object.getString("op")) {
             case "start" -> this.start(object);
             case "interrupt" -> this.interrupt(object);
-            default -> "{\"status\": \"error\", \"message\": \"bad op\"}";
+            default -> Json.createObjectBuilder().add("status", "error").add("message", "bad op").build().toString();
         };
     }
 
     private String interrupt(JsonObject object) {
+        
         return null;
     }
 

@@ -219,6 +219,7 @@ export default class Gui {
             id: "backend",
             store: this.store,
             options: backendList.map(backend => ({key: backend, value: backend})),
+            formatKey: v => v.padStart(13, " "),
         });
         this.store.subscribe((key, after, before) => {
             const alive = this.store.getBackendAlive(this.store.backend);
