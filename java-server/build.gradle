@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'java-library'
 }
 
 repositories {
@@ -8,7 +9,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.eclipse.jetty.websocket:websocket-server:9.+'
+    implementation 'javax.json:javax.json-api:1.1'
+    implementation 'javax.websocket:javax.websocket-api:1.1'
+    implementation 'org.glassfish:javax.json:1.1'
+    implementation 'org.glassfish.tyrus:tyrus-server:1.12'
+    implementation 'org.glassfish.tyrus:tyrus-container-grizzly-server:1.12'
 }
 
 application {
