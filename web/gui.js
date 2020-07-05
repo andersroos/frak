@@ -1,8 +1,8 @@
 import {calculateWeight, formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
+import {WheelSelectStore} from "./inputs";
 
-const SQRT_2 = Math.sqrt(2);
 const QBRT_2 = Math.pow(2, 1/3);
 
 const asRectWithAspectRatio = (first, second, ratio) => {
@@ -166,11 +166,12 @@ class OptionWheelLocalStorage {
 
 export default class Gui {
     
-    constructor(core, screen, history) {
+    constructor(core, store, screen, history, backendList) {
         this.screen = screen;
         this.colors = new Colors(this.screen);
         this.history = history;
         this.core = core;
+        this.store = store;
 
         // Init canvas and screen.
         
@@ -213,6 +214,17 @@ export default class Gui {
             defaultValue: 256 * 1024,
         });
 
+        // Backend.
+        this.backendInput = new WheelSelectStore({
+            id: "backend",
+            store: this.store,
+            options: backendList.map(backend => ({key: backend, value: backend})),
+        });
+        this.store.subscribe((key, after, before) => {
+            const alive = this.store.getBackendAlive(this.store.backend);
+            document.getElementById("backend").style.color = alive ? "#0f0" : "#f00";
+        });
+
         // Worker count.
         this.workerCountInput = new ValueWheelLocalStorage({
             inputId: 'worker-count',
@@ -231,7 +243,7 @@ export default class Gui {
             },
             options: [
                 {label: 'RAINBOW', value: "9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3"},
-                {label: 'WHITE-RED', value: "101010-#64-ffffff-#64-ff0000-#24-101010"},
+                {label: 'WHITE*RED', value: "101010-#64-ffffff-#64-ff0000-#24-101010"},
                 {label: 'C64', value: "eef493-#1-a8654a-#1-7ccb8e-#1-000000-#1-eef493"},
             ]
         });

@@ -16,7 +16,7 @@ public class Main {
         LogFormatter formatter = new LogFormatter();
         Arrays.stream(Logger.getLogger("").getHandlers()).forEach(h -> h.setFormatter(formatter));
 
-        Server server = new Server("0.0.0.0", 44010, "/dispatcher", null, Dispatcher.class);
+        Server server = new Server("0.0.0.0", 44001, "/", null, Dispatcher.class);
 
         logger.info("starting java websocket server");
         server.start();

@@ -4,13 +4,18 @@ import Gui from "./gui";
 import {CALCULATING} from "./colors";
 import History from "./history";
 import {calculateWeight} from "./util";
+import Store from "./store";
+import {Backends} from "./backends";
+
 
 export default class Core {
     
     constructor() {
+        this.store = new Store();
+        this.backends = new Backends(this.store);
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
         this.history = new History(() => this.gui.onHistoryChanged(), data => this.startFromHistory(data));
-        this.gui = new Gui(this, this.screen, this.history);
+        this.gui = new Gui(this, this.store, this.screen, this.history, this.backends.listBackends());
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onmessage(e);
     }

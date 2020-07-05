@@ -1,5 +1,6 @@
 package se.ygram.frak;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.logging.Logger;
 
@@ -19,8 +20,9 @@ public class Dispatcher {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
 
     @OnOpen
-    public void onOpen(Session session) {
+    public void onOpen(Session session) throws IOException {
         logger.info("open " + session.getUserProperties().toString());
+        session.getBasicRemote().sendText(Json.createObjectBuilder().add("op", "config").add("max_wokers", Runtime.getRuntime().availableProcessors()).build().toString());
     }
 
     @OnMessage

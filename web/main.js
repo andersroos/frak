@@ -50,7 +50,7 @@ window.init = () => {
     // core.pushHistory();
     // core.start();
     
-    core.startBenchmark12();
+    core.startBenchmark01();
 };
 
 /*
