@@ -24,7 +24,7 @@ export default class Store {
             x0_delta: 4 / X_SIZE,
             y0_delta: 4 / Y_SIZE,
         });
-        this.createProperty("max_n", 32 * 1024)
+        this.createProperty("max_n", 32 * 1024);
     }
 
     createProperty(key, defaultValue) {
@@ -34,6 +34,7 @@ export default class Store {
         });
     }
 
+    // TODO Subscribe to keys.
     subscribe(onChange) {
         const id = this.subscriberId++;
         this.subscribers[id] = onChange;

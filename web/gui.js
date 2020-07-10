@@ -166,10 +166,9 @@ class OptionWheelLocalStorage {
 
 export default class Gui {
     
-    constructor(core, store, screen, history, backendList) {
+    constructor(core, store, screen, backendList) {
         this.screen = screen;
         this.colors = new Colors(this.screen);
-        this.history = history;
         this.core = core;
         this.store = store;
 
@@ -317,18 +316,6 @@ export default class Gui {
         };
         setTimeout(paint, 0);
 
-        // Save
-        document.querySelector("#save").onsubmit = () => {
-            if (!this.saveButton.disabled) {
-                this.history.save(this.getKey());
-            }
-            return false;
-        };
-        this.saveKeyInput = document.querySelector("#save input");
-        this.saveKeyInput.oninput = () => this.calculateSaveEnable();
-        this.saveButton = document.querySelector("#save button");
-        this.calculateSaveEnable();
-        
         // Benchmarks
         document.querySelector("#benchmark01").onclick = () => {
             this.core.startBenchmark01();
@@ -359,53 +346,6 @@ export default class Gui {
 
     onEvent() {
         this.lastEvent = performance.now();
-    }
-    
-    onHistoryChanged() {
-        const list = this.history.listSaved();
-        const saved = document.querySelector('#saved tbody');
-        const template = document.querySelector('#saved-item');
-        saved.innerHTML = null;
-        list.forEach(item => {
-            const savedItem = template.content.cloneNode(true);
-            // const elapsedSeconds = item.elapsed / 1000 || undefined;
-            savedItem.querySelector('.key').textContent = item.key.toString();
-            savedItem.querySelector('.col').textContent = item.colors.toString();
-            // savedItem.querySelector('.workers').textContent = item.workers.toString();
-            // savedItem.querySelector('.elapsed').textContent = elapsedSeconds ? formatFloat(elapsedSeconds, {dec: 2}) : 'NULL';
-            savedItem.querySelector('.weight').textContent = item.weight ? formatFloat(item.weight, {human: true, dec: 4}) : 'NULL';
-            // savedItem.querySelector('.weight-per-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds, {human: true, dec: 4}) : 'NULL';
-            // savedItem.querySelector('.weight-per-worker-second').textContent = elapsedSeconds ? formatFloat(item.weight / elapsedSeconds / item.workers, {human: true, dec: 4}) : 'NULL';
-            savedItem.querySelector('.max-n').textContent = item.max_n ? formatInt(item.max_n, {space: 3}) : 'NULL';
-            saved.appendChild(savedItem);
-        });
-        const rows = saved.getElementsByTagName("tr");
-        list.forEach((item, i) => {
-            const row = rows[i];
-            row.onclick = () => {
-                const data = this.history.getSaved(item.key);
-                if (data) this.core.startFromSaved(data);
-            };
-            row.querySelector(".remove").onclick = () => {
-                this.history.removeSaved(item.key);
-                this.setKey(null);
-            };
-        });
-        this.calculateSaveEnable();
-    }
-    
-    getKey() {
-        return this.saveKeyInput.value.trim().toLowerCase();
-    }
-    
-    setKey(key) {
-        this.saveKeyInput.value = key ? key : '';
-    }
-
-    calculateSaveEnable() {
-        let enabled = this.saveKeyInput.value.trim().length > 0;
-        this.saveButton.disabled = !enabled;
-        // TODO this.saveButton.textContent = this.history.isKeySaved(this.getKey()) ? "update" : "save";
     }
     
     paintCanvas(time) {

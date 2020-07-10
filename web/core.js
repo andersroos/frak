@@ -6,7 +6,6 @@ import History from "./history";
 import {calculateWeight} from "./util";
 import Store from "./store";
 import {Backends} from "./backends";
-import Saved from "./saved";
 
 
 export default class Core {
@@ -16,10 +15,7 @@ export default class Core {
         this.backends = new Backends(this.store, this);
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
         this.history = new History(data => this.startFromHistory(data));
-        this.saved = new Saved();
-        this.gui = new Gui(this, this.store, this.screen, this.history, this.backends.listBackends());
-        // this.dispatcher = new Worker('dispatcher.js');
-        // this.dispatcher.onmessage = e => this.onmessage(e);
+        this.gui = new Gui(this, this.store, this.screen, this.backends.listBackends());
     }
 
     // Setting max n will cause immediate recalculation.
@@ -54,7 +50,6 @@ export default class Core {
     // Start a calculation from history, take only coordinates and keep rest as is, updating history record with current max_n
     startFromHistory({x0_start_index, x0_delta, y0_start_index, y0_delta, max_n, historyId}) {
         console.info("starting from back/forward", historyId);
-        this.gui.setKey(null);
         this.backends.requestCalculation({
             x0_delta,
             y0_delta,
@@ -69,7 +64,6 @@ export default class Core {
 
     startBenchmark01() {
         console.info("starting benchmark 01 (chrome-js with 1 worker takes ~1s)");
-        this.gui.setKey(null);
         const max_n = 2560;
         this.store.max_n = max_n;
         this.backends.requestCalculation({
@@ -89,7 +83,6 @@ export default class Core {
     
     startBenchmark12() {
         console.info("starting benchmark 12 (chrome-js with 24 worker takes ~12s)");
-        this.gui.setKey(null);
         this.interrupt();
         this.screen.clear();
         this.configure({
@@ -108,7 +101,6 @@ export default class Core {
     
     startBenchmark40() {
         console.info("starting benchmark 40 (chrome-js with 24 worker takes ~40s)");
-        this.gui.setKey(null);
         this.interrupt();
         this.screen.clear();
         this.configure({
@@ -124,29 +116,7 @@ export default class Core {
         this.pushHistory();
         this.start();
     }
-    
-    // Start a calculation from saved data, using data that affects looks but no other.
-    startFromSaved({key, x0_start_index, x0_delta, y0_start_index, y0_delta, colors, color_cycle, color_scale, color_offset, max_n}) {
-        console.info("starting from saved", key);
-        this.gui.setKey(key);
-        this.interrupt();
-        this.configure({
-            id: Date.now(),
-            x0_start_index,
-            x0_delta,
-            y0_start_index,
-            y0_delta,
-            max_n,
-            colors,
-            color_cycle,
-            color_scale,
-            color_offset,
-        });
-        this.screen.clear();
-        this.pushHistory();
-        this.start();
-    }
-    
+
     // Configure the next fractal run.
     configure({benchmark, x0_start_index, x0_delta, y0_start_index, y0_delta, max_n, id, colors, color_scale, color_offset, color_cycle}) {
         if (x0_start_index !== undefined && x0_delta !== undefined && y0_start_index !== undefined && y0_delta !== undefined) {
