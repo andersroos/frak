@@ -1,7 +1,7 @@
 import {calculateWeight, formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
-import {WheelSelectStore} from "./inputs";
+import {WheelSelectStore, WheelValueStore} from "./inputs";
 
 const QBRT_2 = Math.pow(2, 1/3);
 
@@ -201,16 +201,14 @@ export default class Gui {
         }
 
         // Max n.
-        this.maxNInput = new ValueWheelLocalStorage({
-            inputId: 'max-n',
+        this.maxNInput = new WheelValueStore({
+            store: this.store,
+            id: 'max_n',
             onChangeByUser: v => {
-                this.core.setMaxN(Math.round(v));
-                // TODO Changing max n should not be a start, it should be some sort of refining operation?
-                this.core.start();
+                this.core.startFromNewMaxN();
             },
             newValue: (v, direction) => direction ? Math.max(1, v / QBRT_2) : v * QBRT_2,
             formatValue: v => formatInt(v, {padTo: 12, space: 3}),
-            defaultValue: 256 * 1024,
         });
 
         // Backend.
@@ -317,6 +315,10 @@ export default class Gui {
         setTimeout(paint, 0);
 
         // Benchmarks
+        document.querySelector("#benchmark00").onclick = () => {
+            this.core.startBenchmark00();
+            return false;
+        };
         document.querySelector("#benchmark01").onclick = () => {
             this.core.startBenchmark01();
             return false;
@@ -411,7 +413,7 @@ export default class Gui {
 
     onMouseRect(start, end) {
         const {x, y, dx, dy} = asRectWithAspectRatio(start, end, X_SIZE / Y_SIZE);
-        this.core.zoom(x, y, dx, dy);
+        this.core.startFromZoom(x, y, dx, dy);
     }
     
     onMouseEvent() {

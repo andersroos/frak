@@ -8,8 +8,6 @@ export class WheelSelectStore {
         this.options = options;
         this.formatKey = formatKey;
 
-        console.info(id, options);
-
         const element = document.getElementById(this.id);
         element.onwheel = this.onWheel.bind(this);
         this.element = element.getElementsByClassName("value")[0];
@@ -47,3 +45,38 @@ export class WheelSelectStore {
         if (this.onChange) this.onChange(option.key, option.value);
     }
 }
+
+
+export class WheelValueStore {
+    constructor({store, id, onChangeByUser, newValue, formatValue}) {
+        this.store = store;
+        this.id = id;
+        this.onChangeByUser = onChangeByUser;
+        this.newValue = newValue;
+        this.formatValue = formatValue;
+
+        const element = document.getElementById(id);
+        element.onwheel = this.onWheel.bind(this);
+        this.element = element.getElementsByClassName("value")[0];
+
+        this.store.subscribe((key, before, after) => {
+            if (key === this.id && before !== after) {
+                this.onValueChanged();
+            }
+        });
+
+        this.onValueChanged();
+    }
+
+    onWheel(event) {
+        this.store[this.id] = this.newValue(this.store[this.id], event.deltaY > 0);
+        this.onValueChanged();
+        if (this.onChangeByUser) this.onChangeByUser(this.value);
+    }
+
+    onValueChanged() {
+        this.element.textContent = this.formatValue(this.store[this.id]);
+    }
+}
+
+

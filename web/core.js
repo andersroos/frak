@@ -19,18 +19,26 @@ export default class Core {
     }
 
     // Setting max n will cause immediate recalculation.
-    setMaxN(max_n) {
+    startFromNewMaxN() {
+        const max_n = Math.round(this.store.max_n);
         console.info("changing max_n", max_n);
-        this.interrupt();
-        this.configure({max_n});
-        this.history.update({id: this.id, max_n});
-        this.start();
+        const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.store.coordinates;
+        this.backends.requestCalculation({
+            x0_delta,
+            y0_delta,
+            x0_start_index,
+            y0_start_index,
+            max_n,
+            onBeforeStart: () => {
+                this.screen.clearInProgress();
+                this.history.update({max_n});
+            },
+        });
     }
     
     // Called by zoom event from gui.
-    zoom(x, y, x_size, y_size) {
+    startFromZoom(x, y, x_size, y_size) {
         console.info("zooming", x, y, x_size, y_size);
-        this.gui.setKey(null);
         const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.store.coordinates;
         const new_x0_delta = x0_delta * x_size / X_SIZE;
         const new_y0_delta = y0_delta * y_size / Y_SIZE;
@@ -58,6 +66,25 @@ export default class Core {
             max_n,
             onBeforeStart: () => {
                 this.screen.clear();
+            },
+        });
+    }
+
+    startBenchmark00() {
+        console.info("starting benchmark 00 (chrome-js with 1 worker takes ~0s)");
+        const max_n = 32;
+        this.store.max_n = max_n;
+        this.backends.requestCalculation({
+            x0_delta: 4 / X_SIZE,
+            y0_delta: 4 / Y_SIZE,
+            x0_start_index: -0.5 * X_SIZE,
+            y0_start_index: -0.5 * Y_SIZE,
+            max_n,
+            benchmark: "00",
+            onBeforeStart: () => {
+                this.gui.colorScaleInput.setValue(80.63492856264527);
+                this.screen.clear();
+                this.pushHistory();
             },
         });
     }
@@ -172,32 +199,17 @@ export default class Core {
         this.gui.onEvent();
     }
 
-    interrupt() {
-        if (!this.id) {
-            return;
-        }
-        console.info("interrupting", this.id);
-        this.dispatcher.postMessage({id: this.id, op: INTERRUPT});
-        this.endTime = performance.now();
-        this.benchmark = null;
-        this.gui.onEvent();
-    }
-    
     getElapsedTime() {
         return this.backends.getElapsedTime();
     }
     
     onAborted() {
         const statistics = this.screen.getStatistics();
-        this.endTime = performance.now();
-        this.history.update({id: this.id, weight: calculateWeight(statistics, this.max_n)}); // TODO remove
         this.gui.onFinished(statistics);
     }
 
     onCompleted({benchmark}) {
         const statistics = this.screen.getStatistics();
-        this.endTime = performance.now();
-        this.history.update({id: this.id, weight: calculateWeight(statistics, this.max_n)}); // TODO rework history
         if (benchmark) {
             // TODO this.history.saveBenchmark();
         }

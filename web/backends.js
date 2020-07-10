@@ -33,8 +33,8 @@ class LocalBackend {
         this.dispatcher.postMessage({op: START, id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers});
     }
 
-    abort() {
-        this.dispatcher.postMessage({op: ABORT});
+    abort({id}) {
+        this.dispatcher.postMessage({op: ABORT, id});
     }
 
     alive() {
@@ -231,6 +231,9 @@ export class Backends {
 
     onAborted({id}) {
         console.info("abort", id);
+        if (id === undefined) {
+            throw new Error();
+        }
         if (!this.currenctCalculation || this.currenctCalculation.id !== id) return;
         this.currenctCalculation.abortTime = performance.now();
         this.currenctCalculation.onAborted(this.currenctCalculation);

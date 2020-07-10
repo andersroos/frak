@@ -28,7 +28,7 @@ onmessage = event => {
                 xn = next_xn;
                 yn = next_yn;
             }
-            data[yi * x_size + xi] = n === max_n ? INFINITE : n;
+            data[yi * x_size + xi] = n >= max_n ? INFINITE : n;
         }
     }
 
