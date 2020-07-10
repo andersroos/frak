@@ -79,7 +79,7 @@ class Dispatcher {
         this.postBlock(data.worker_index);
         postMessage(data, [data.bytes]);
         if (this.workingCount === 0) {
-            postMessage({op: COMPLETED});
+            postMessage({op: COMPLETED, id: data.id});
         }
     }
 }

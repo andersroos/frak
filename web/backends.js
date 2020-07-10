@@ -2,9 +2,11 @@ import {
     BACKEND_KEY,
     STATE_CALCULATING,
     STATE_ABORTING,
-    STATE_WAITING, STATE_WAITING_ABORTED,
+    STATE_WAITING,
+    STATE_WAITING_ABORTED,
     STATE_WAITING_OFFLINE,
-    STATE_WAITING_STARTUP
+    STATE_WAITING_STARTUP,
+    STATE_WAITING_COMPLETED
 } from "./store";
 import {guessBrowser, guessHardwareConcurrency} from "./util";
 import {ABORTED, BLOCK_COMPLETED, BLOCK_STARTED, COMPLETED, START, ABORT} from "./op";
@@ -153,7 +155,7 @@ export class Backends {
         else if (this.store.state.startsWith(STATE_ABORTING)) {
             if (performance.now() - this.currenctCalculation.abortTime > ABORT_TIMEOUT) {
                 this.store.state = STATE_WAITING_ABORTED;
-                this.currenctCalculation.onAborted();
+                this.currenctCalculation.onAborted(this.currenctCalculation);
                 this.currenctCalculation.backend.reconnect();
             }
         }
@@ -172,17 +174,30 @@ export class Backends {
         this.currenctCalculation.id = Date.now();
         this.currenctCalculation.backend = this.selectedBackend;
         this.currenctCalculation.workers = Math.min(this.selectedBackend.max_workers, this.store.workers);
-        this.currenctCalculation.startTime = performance.now();
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
 
         this.currenctCalculation.onBeforeStart();
+
+        this.currenctCalculation.startTime = performance.now();
+
         this.currenctCalculation.backend.start(this.currenctCalculation);
     }
 
     listBackends() {
         return Object.keys(this.backends).sort();
     }
+
+    getElapsedTime() {
+        const curr = this.currenctCalculation;
+        if (!curr) return null;
+        if (!curr.startTime) return null;
+        if (curr.completeTime) return curr.completeTime - curr.startTime;
+        if (curr.abortTime) return curr.abortTime - curr.startTime;
+        return performance.now() - curr.startTime;
+    }
+
+
 
     reviveBackend() {
         if (this.selectedBackend && !this.selectedBackend.alive()) {
@@ -204,6 +219,7 @@ export class Backends {
     }
 
     onCompleted({id}) {
+        console.info("completed", id);
         if (!this.currenctCalculation || this.currenctCalculation.id !== id) return;
         this.currenctCalculation.completeTime = performance.now();
         this.currenctCalculation.onCompleted(this.currenctCalculation);
@@ -212,6 +228,7 @@ export class Backends {
     }
 
     onAborted({id}) {
+        console.info("abort", id);
         if (!this.currenctCalculation || this.currenctCalculation.id !== id) return;
         this.currenctCalculation.abortTime = performance.now();
         this.currenctCalculation.onAborted(this.currenctCalculation);

@@ -184,14 +184,8 @@ export default class Core {
     }
     
     start() {
-        if (Boolean(this.startTime) !== Boolean(this.endTime)) {
-            return;
-        }
-        
         this.screen.clearInProgress();
         
-        this.startTime = performance.now();
-        this.endTime = null;
         this.workersAtStart = this.gui.workerCountInput.getValue();
         this.backendAtStart = 'chrome*js';
 
@@ -226,22 +220,20 @@ export default class Core {
     }
     
     getElapsedTime() {
-        if (!this.startTime) return null;
-        if (this.endTime) return this.endTime - this.startTime;
-        return performance.now() - this.startTime;
+        return this.backends.getElapsedTime();
     }
     
     onAborted() {
         const statistics = this.screen.getStatistics();
         this.endTime = performance.now();
-        this.history.update({id: this.id, elapsed: this.endTime - this.startTime, weight: calculateWeight(statistics, this.max_n)}); // TODO remove
+        this.history.update({id: this.id, weight: calculateWeight(statistics, this.max_n)}); // TODO remove
         this.gui.onFinished(statistics);
     }
 
     onCompleted({benchmark}) {
         const statistics = this.screen.getStatistics();
         this.endTime = performance.now();
-        this.history.update({id: this.id, elapsed: this.endTime - this.startTime, weight: calculateWeight(statistics, this.max_n)}); // TODO rework history
+        this.history.update({id: this.id, weight: calculateWeight(statistics, this.max_n)}); // TODO rework history
         if (benchmark) {
             // TODO this.history.saveBenchmark();
         }
