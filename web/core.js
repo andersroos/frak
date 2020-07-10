@@ -6,15 +6,17 @@ import History from "./history";
 import {calculateWeight} from "./util";
 import Store from "./store";
 import {Backends} from "./backends";
+import Saved from "./saved";
 
 
 export default class Core {
     
     constructor() {
         this.store = new Store();
-        this.backends = new Backends(this.store);
+        this.backends = new Backends(this.store, this);
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
-        this.history = new History(() => this.gui.onHistoryChanged(), data => this.startFromHistory(data));
+        this.history = new History(data => this.startFromHistory(data));
+        this.saved = new Saved();
         this.gui = new Gui(this, this.store, this.screen, this.history, this.backends.listBackends());
         // this.dispatcher = new Worker('dispatcher.js');
         // this.dispatcher.onmessage = e => this.onmessage(e);
@@ -33,51 +35,55 @@ export default class Core {
     zoom(x, y, x_size, y_size) {
         console.info("zooming", x, y, x_size, y_size);
         this.gui.setKey(null);
-        this.interrupt();
-        const x0_delta = this.x0_delta * x_size / X_SIZE;
-        const y0_delta = this.y0_delta * y_size / Y_SIZE;
-        this.configure({
-            id: Date.now(),
-            x0_start_index: Math.round((this.x0_start_index + x) * this.x0_delta / x0_delta),
-            x0_delta,
-            y0_start_index: Math.round((this.y0_start_index + y) * this.y0_delta / y0_delta),
-            y0_delta,
+        const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.store.coordinates;
+        const new_x0_delta = x0_delta * x_size / X_SIZE;
+        const new_y0_delta = y0_delta * y_size / Y_SIZE;
+        this.backends.requestCalculation({
+            x0_delta: new_x0_delta,
+            y0_delta: new_y0_delta,
+            x0_start_index: Math.round((x0_start_index + x) * x0_delta / new_x0_delta),
+            y0_start_index: Math.round((y0_start_index + y) * y0_delta / new_y0_delta),
+            max_n: this.store.max_n,
+            onBeforeStart: () => {
+                this.screen.clear();
+                this.pushHistory();
+            },
         });
-        this.screen.clear();
-        this.pushHistory();
-        this.start();
     }
     
     // Start a calculation from history, take only coordinates and keep rest as is, updating history record with current max_n
-    startFromHistory({x0_start_index, x0_delta, y0_start_index, y0_delta, id}) {
-        console.info("starting from back/forward", id);
+    startFromHistory({x0_start_index, x0_delta, y0_start_index, y0_delta, max_n, historyId}) {
+        console.info("starting from back/forward", historyId);
         this.gui.setKey(null);
-        this.interrupt();
-        this.configure({id, x0_start_index, x0_delta, y0_start_index, y0_delta});
-        this.history.update({id, max_n: this.max_n});
-        this.start();
+        this.backends.requestCalculation({
+            x0_delta,
+            y0_delta,
+            x0_start_index,
+            y0_start_index,
+            max_n,
+            onBeforeStart: () => {
+                this.screen.clear();
+            },
+        });
     }
 
     startBenchmark01() {
         console.info("starting benchmark 01 (chrome-js with 1 worker takes ~1s)");
         this.gui.setKey(null);
+        const max_n = 2560;
+        this.store.max_n = max_n;
         this.backends.requestCalculation({
-            id: Date.now(),
             x0_delta: 0.00014425531844608486,
             y0_delta: 0.00014425531844608486,
             x0_start_index: -8410,
             y0_start_index: -2206,
-            max_n: 2560,
+            max_n,
             benchmark: "01",
             onBeforeStart: () => {
                 this.gui.colorScaleInput.setValue(512);
                 this.screen.clear();
                 this.pushHistory();
             },
-            onAborted: this.onAborted.bind(this),
-            onCompleted: this.onCompleted.bind(this),
-            onBlockStarted: this.onBlockStarted.bind(this),
-            onBlockCompleted: this.onBlockCompleted.bind(this),
         });
     }
     
@@ -166,21 +172,9 @@ export default class Core {
         if (color_cycle !== undefined) this.gui.colorCycleInput.setKey(color_cycle);
     }
 
-    // Push the current set coordinates and config to history (need color data and max_n since history data is used when saving).
     pushHistory() {
-        this.history.push({
-            id: this.id,
-            colors: this.gui.colorsInput.getKey(),
-            color_scale: this.gui.colorScaleInput.getValue(),
-            color_offset: this.gui.colorOffsetImput.getKey(),
-            color_cycle: this.gui.colorCycleInput.getKey(),
-            x0_start_index: this.x0_start_index,
-            x0_delta: this.x0_delta,
-            y0_start_index: this.y0_start_index,
-            y0_delta: this.y0_delta,
-            max_n: this.max_n,
-            benchmark: this.benchmark,
-        });
+        const data = Object.assign({max_n: this.store.max_n}, this.store.coordinates);
+        this.history.push(data);
     }
     
     start() {
@@ -240,7 +234,7 @@ export default class Core {
         this.gui.onFinished(statistics);
     }
     
-    onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes}) {
+    onBlockCompleted({x_start, y_start, x_size, y_size, bytes}) {
         const blockData = new Uint32Array(bytes);
         const targetOffset = y_start * X_SIZE + x_start;
         const screenData = this.screen.refData();
@@ -251,7 +245,7 @@ export default class Core {
         this.gui.onEvent();
     }
 
-    onBlockStarted({id, x_start, y_start, x_size, y_size}) {
+    onBlockStarted({x_start, y_start, x_size, y_size}) {
         // noinspection JSSuspiciousNameCombination
         this.screen.fillRect(x_start, x_size, y_start, y_size, CALCULATING);
         this.gui.onEvent();

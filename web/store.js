@@ -1,3 +1,5 @@
+import {X_SIZE, Y_SIZE} from "./dimensions";
+
 export const STATE_WAITING = "waiting";
 export const STATE_WAITING_STARTUP = "waiting-startup";
 export const STATE_WAITING_OFFLINE = "waiting-offline";
@@ -16,6 +18,13 @@ export default class Store {
         this.createProperty(BACKEND_KEY, "java");
         this.createProperty("state", STATE_WAITING_STARTUP);
         this.createProperty("workers", 24);
+        this.createProperty("coordinates", {
+            x0_start_index: Math.round(-0.5 * X_SIZE),
+            y0_start_index: Math.round(-0.5 * Y_SIZE),
+            x0_delta: 4 / X_SIZE,
+            y0_delta: 4 / Y_SIZE,
+        });
+        this.createProperty("max_n", 32 * 1024)
     }
 
     createProperty(key, defaultValue) {

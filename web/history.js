@@ -1,102 +1,31 @@
 
-const storeSatedInServer = saved => {
-    localStorage.setItem('saved', JSON.stringify(saved));
-};
-
-const loadSavedFromServer = () => {
-    return new Promise((resolve, reject) => {
-        const saved = JSON.parse(localStorage.getItem('saved') || '{}');
-        resolve(saved);
-    });
-};
-
 export default class History {
     
-    constructor(onChanged, startFromHistory) {
-        this.onChanged = onChanged;
-        this.startFromHistory = startFromHistory;
-        this.currentId = null;
+    constructor(onPopHistory) {
+        this.onPopHistory = onPopHistory;
+        this.currentHistoryId = null;
         this.historyData = {};
-        this.savedData = {};
-        
-        loadSavedFromServer().then(saved => {
-            Object.entries(saved).forEach(([key, e]) => {
-                this.savedData[key] = e;
-            });
-            this.onChanged();
-        });
-        
+
         window.onpopstate = (e) => {
-            if (e.state && e.state.id) {
-                const data = this.historyData[e.state.id];
+            if (e.state && e.state.historyId) {
+                const data = this.historyData[e.state.historyId];
                 if (data) {
-                    this.currentId = e.state.id;
-                    this.startFromHistory(data);
-                    this.onChanged();
+                    this.historyId = e.state.historyId;
+                    this.onPopHistory(data);
                 }
             }
         };
     }
 
-    // Save benchmark.
-    saveBenchmark() {
-        const data = this.historyData[this.currentId];
-        console.info("benchmark done", data);
-    }
-    
-    // Return a list of saved.
-    listSaved() {
-        const result = Object.values(this.savedData);
-        result.sort((a, b) => b.id - a.id);
-        return result;
-    }
-    
-    // Return saved data.
-    getSaved(key) {
-        return this.savedData[key];
-    }
-    
-    // Called when new fractal is started (for example on zoom).
+    // Push fractal data to be used when popped from back stack.
     push(data) {
-        this.historyData[data.id] = data;
-        this.currentId = data.id;
-        window.history.pushState({id: data.id}, null, "#" + data.id);
-        this.onChanged();
+        this.currentHistoryId = data.historyId = Date.now();
+        this.historyData[this.currentHistoryId] = data;
+        window.history.pushState({historyId: this.currentHistoryId}, null, "#" + this.currentHistoryId);
     }
-    
-    // Update current fractal with historyData (elapsed time, colors, etc).
+
+    // Update history, some operations (change of max_n), does not push history but updates the current.
     update(data) {
-        if (data.id === this.currentId) {
-            Object.assign(this.historyData[data.id], data);
-            this.onChanged();
-        }
+        Object.assign(this.historyData[this.currentHistoryId], data);
     }
-    
-    // Persist current data as a benchmark result.
-    addBenchmarkResult() {
-        const data = this.historyData[this.currentId];
-        if (data.key !== 'benchmark') {
-            throw new Error('current data is not a benchmark run');
-        }
-    }
-    
-    isKeySaved(key) {
-        return Boolean(this.savedData[key]);
-    }
-    
-    // Save current fractal to persistent storage or update if exists, key is key
-    save(key) {
-        console.info("saving", key);
-        this.savedData[key] = Object.assign(this.savedData[key] || {}, this.historyData[this.currentId] || {}, {key: key});
-        storeSatedInServer(this.savedData);
-        this.onChanged();
-    }
-    
-    // Remove fractal from persistent storage.
-    removeSaved(key) {
-        delete this.savedData[key];
-        storeSatedInServer(this.savedData);
-        this.onChanged();
-    }
-    
 }

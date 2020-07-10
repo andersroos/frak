@@ -239,7 +239,7 @@ export default class Gui {
             inputId: 'colors',
             onChange: (value, key) => {
                 this.colors.parse(value);
-                this.history.update({id: this.core.id, colors: key});
+                // TODO this.history.update({id: this.core.id, colors: key});
                 this.onEvent();
             },
             options: [
@@ -254,7 +254,7 @@ export default class Gui {
             inputId: 'color-cycle',
             onChange: (value, key) => {
                 this.colors.setCycleTime(value * 1000);
-                this.history.update({id: this.core.id, color_cycle: key});
+                // TODO this.history.update({id: this.core.id, color_cycle: key});
                 this.onEvent();
             },
             options: [
@@ -272,7 +272,7 @@ export default class Gui {
             inputId: 'color-scale',
             onChange: value => {
                 this.colors.setScaleLength(value);
-                this.history.update({id: this.core.id, color_scale: value});
+                // TODO this.history.update({id: this.core.id, color_scale: value});
                 this.onEvent();
             },
             newValue: (v, direction) => direction ? Math.max(4, v / QBRT_2) : v * QBRT_2,
@@ -287,7 +287,7 @@ export default class Gui {
             inputId: 'color-offset',
             onChange: (value, key) => {
                 this.colors.setColorOffset(value);
-                this.history.update({id: this.core.id, color_offset: key});
+                // TODO this.history.update({id: this.core.id, color_offset: key});
                 this.onEvent();
             },
             options: [
@@ -405,7 +405,7 @@ export default class Gui {
     calculateSaveEnable() {
         let enabled = this.saveKeyInput.value.trim().length > 0;
         this.saveButton.disabled = !enabled;
-        this.saveButton.textContent = this.history.isKeySaved(this.getKey()) ? "update" : "save";
+        // TODO this.saveButton.textContent = this.history.isKeySaved(this.getKey()) ? "update" : "save";
     }
     
     paintCanvas(time) {

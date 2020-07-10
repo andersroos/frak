@@ -114,9 +114,11 @@ const ABORT_TIMEOUT = 5000;
 
 export class Backends {
 
-    constructor(store) {
+    constructor(store, core) {
         this.store = store;
         this.store.subscribe(this.onChange.bind(this))
+
+        this.core = core;
 
         const browser = guessBrowser();
         this.backends = Object.fromEntries([
@@ -136,7 +138,16 @@ export class Backends {
 
     // Request a start using the parameters. Callbacks are not called if this configuration is overwritten before it starts.
     requestCalculation(params) {
-        this.requestedCalculation = params;
+        this.requestedCalculation = Object.assign(
+            {
+                onBeforeStart: () => {},
+                onAborted: this.core.onAborted.bind(this.core),
+                onCompleted: this.core.onCompleted.bind(this.core),
+                onBlockStarted: this.core.onBlockStarted.bind(this.core),
+                onBlockCompleted: this.core.onBlockCompleted.bind(this.core),
+            },
+            params
+        );
         this.handleCalculationState();
     }
 
@@ -176,6 +187,8 @@ export class Backends {
         this.currenctCalculation.workers = Math.min(this.selectedBackend.max_workers, this.store.workers);
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
+        const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.currenctCalculation;
+        this.store.coordinates = {x0_delta, y0_delta, x0_start_index, y0_start_index};
 
         this.currenctCalculation.onBeforeStart();
 
@@ -187,17 +200,6 @@ export class Backends {
     listBackends() {
         return Object.keys(this.backends).sort();
     }
-
-    getElapsedTime() {
-        const curr = this.currenctCalculation;
-        if (!curr) return null;
-        if (!curr.startTime) return null;
-        if (curr.completeTime) return curr.completeTime - curr.startTime;
-        if (curr.abortTime) return curr.abortTime - curr.startTime;
-        return performance.now() - curr.startTime;
-    }
-
-
 
     reviveBackend() {
         if (this.selectedBackend && !this.selectedBackend.alive()) {
@@ -240,6 +242,15 @@ export class Backends {
         if (key === BACKEND_KEY && before !== after) {
             this.selectedBackend = this.backends[after];
         }
+    }
+
+    getElapsedTime() {
+        const curr = this.currenctCalculation;
+        if (!curr) return null;
+        if (!curr.startTime) return null;
+        if (curr.completeTime) return curr.completeTime - curr.startTime;
+        if (curr.abortTime) return curr.abortTime - curr.startTime;
+        return performance.now() - curr.startTime;
     }
 
 }
