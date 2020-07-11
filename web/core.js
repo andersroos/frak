@@ -70,6 +70,15 @@ export default class Core {
         });
     }
 
+    whenBackendConnected(callback) {
+        if (this.store.getBackendAlive(this.store.backend)) {
+            callback();
+        }
+        else {
+            setTimeout(() => this.whenBackendConnected(callback), 200);
+        }
+    }
+
     startBenchmark00() {
         console.info("starting benchmark 00 (chrome-js with 1 worker takes ~0s)");
         const max_n = 32;

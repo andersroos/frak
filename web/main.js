@@ -49,8 +49,8 @@ window.init = () => {
     // core.configure(out);
     // core.pushHistory();
     // core.start();
-    
-    core.startBenchmark00();
+
+    core.whenBackendConnected(() => core.startBenchmark00());
 };
 
 /*

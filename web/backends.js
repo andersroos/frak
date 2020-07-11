@@ -29,8 +29,8 @@ class LocalBackend {
         this.abort({id: 0});
     }
 
-    start({id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
-        this.dispatcher.postMessage({op: START, id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers});
+    start({id, x_size, y_size, block_x_size, block_y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
+        this.dispatcher.postMessage({op: START, id, x_size, y_size, block_x_size, block_y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers});
     }
 
     abort({id}) {
@@ -64,10 +64,11 @@ class RemoteBackend {
         this.backends = backends;
         this.connect();
         this.max_workers = 1;
+        this.decoder = new TextDecoder();
     }
 
     connect() {
-        if (this.connection) {
+        if (this.connection && this.connection.readyState !== WebSocket.CONNECTING) {
             this.connection.close();
         }
         this.connection = new WebSocket(this.url);
@@ -78,6 +79,7 @@ class RemoteBackend {
     }
 
     alive() {
+        // TODO Need better alive check, maybe after we got config message?
         return this.store.getBackendAlive(this.key);
     }
 
@@ -85,9 +87,9 @@ class RemoteBackend {
         this.connect();
     }
 
-    start({id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
+    start({id, x_size, y_size, block_x_size, block_y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
         console.info("start", id, workers);
-        this.connection.send(JSON.stringify({op: START, id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}));
+        this.connection.send(JSON.stringify({op: START, id, x_size, y_size, block_y_size, block_x_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}));
     }
 
     abort({id}) {
@@ -104,17 +106,45 @@ class RemoteBackend {
         if (typeof e.data === "string") {
             const data = JSON.parse(e.data);
             switch (data.op) {
-                case CONFIG: this.max_workers = data.max_workers; this.backends.onConfig(this.key); break;
+                case CONFIG: this.onConfig(data); break;
                 default: throw new Error(`unknown op ${data.op} from ${this.key}`);
             }
         }
         else {
+            this.onBlockCompleted(e.data);
         }
     }
 
     onClose(e) {
         console.info(this.key, "close", e);
         this.store.putBackendAlive(this.key, false);
+    }
+
+    onConfig(data) {
+        this.max_workers = data.max_workers;
+        assert(data.endian === "little", "only little endian backends are supported (rip network byte order)");
+        this.backends.onConfig(this.key);
+    }
+
+    onBlockCompleted(buffer) {
+        const data = new DataView(buffer);
+
+        let end;
+
+        for (end = 0; end < 22 && data.getUint8(end) !== 0; ++end) {}
+        const op = this.decoder.decode(buffer.slice(0, end));
+        assert(op === BLOCK_COMPLETED, "expected op to be block-completed when message is binary");
+
+        for (end = 22; end < 44 && data.getUint8(end) !== 0; ++end) {}
+        const id = this.decoder.decode(buffer.slice(22, end));
+
+        const x_start = data.getUint32(44, true);
+        const y_start = data.getUint32(48, true);
+        const x_size = data.getUint32(52, true);
+        const y_size = data.getUint32(56, true);
+        const max_n = data.getUint32(60, true);
+
+        this.backends.onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes: buffer.slice(64, buffer.length)});
     }
 }
 
@@ -197,12 +227,20 @@ export class Backends {
         this.currenctCalculation.workers = this.store.getWorkerCount();
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
+        this.currenctCalculation.block_x_size = X_SIZE;
+        // TODO this.currenctCalculation.block_y_size = 1;
+        this.currenctCalculation.block_y_size = Y_SIZE / 4;
         const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.currenctCalculation;
         this.store.coordinates = {x0_delta, y0_delta, x0_start_index, y0_start_index};
 
         this.currenctCalculation.onBeforeStart();
 
         this.currenctCalculation.startTime = performance.now();
+
+        if (this.currenctCalculation.y_size % this.currenctCalculation.block_y_size !== 0
+            || this.currenctCalculation.x_size % this.currenctCalculation.block_x_size !== 0) {
+            throw new Error("y_size must be multiple of block_y_size and x_size must be multiple of block_x_size");
+        }
 
         this.currenctCalculation.backend.start(this.currenctCalculation);
     }

@@ -26,24 +26,21 @@ class Dispatcher {
         }
     }
     
-    onStart({id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
+    onStart({id, x_size, y_size, block_x_size, block_y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
         this.setWorkerCount(workers);
 
         this.blocks = [];
         this.workingCount = 0;
         
         // create one block per line to start (ok we need common class, so we will need to build this js soon).
-        const y_delta = 1;
-        const x_delta = X_SIZE;
-        if (y_size % y_delta !== 0 || x_size % x_delta !== 0) throw new Error("y_size must be multiple of y_delta and x_size must be multiple of x_delta");
-        for (let y = 0; y < y_size; y += y_delta) {
-            for (let x = 0; x < x_size; x += x_delta) {
+        for (let y = 0; y < y_size; y += block_y_size) {
+            for (let x = 0; x < x_size; x += block_x_size) {
                 this.blocks.push({
                     id,
                     x_start: x,
                     y_start: y,
-                    x_size: x_delta,
-                    y_size: y_delta,
+                    x_size: block_x_size,
+                    y_size: block_y_size,
                     x0_start_index: x0_start_index + x,
                     x0_delta,
                     y0_start_index: y0_start_index + y,
