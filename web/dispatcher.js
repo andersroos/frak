@@ -88,7 +88,6 @@ const dispatcher = new Dispatcher();
 
 onmessage = function(event) {
     const params = event.data;
-    console.info("dispatcher got", params);
     switch (params.op) {
         case START: dispatcher.onStart(params); break;
         case ABORT: dispatcher.onAbort(params); break;

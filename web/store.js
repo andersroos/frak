@@ -16,7 +16,7 @@ export default class Store {
 
     constructor() {
         this.subscriberId = 0;
-        this.subscribers = {}
+        this.subscribers = {};
         this.createProperty(BACKEND_KEY, "java");
         this.createProperty("state", STATE_WAITING_STARTUP);
         this.createProperty("workers", "max");
@@ -42,11 +42,11 @@ export default class Store {
         });
     }
 
-    // TODO Subscribe to keys.
-    subscribe(onChange) {
+    subscribe(key, onChange) {
         const id = this.subscriberId++;
-        this.subscribers[id] = onChange;
-        return () => delete this.subscribers[id];
+        this.subscribers[key] = this.subscribers[key] || {}
+        this.subscribers[key][id] = onChange;
+        return () => delete this.subscribers[key][id];
     }
 
     get(key, defaultValue) {
@@ -54,7 +54,7 @@ export default class Store {
         if (value === null) {
             if (defaultValue !== undefined) {
                 localStorage.setItem(key, JSON.stringify(defaultValue));
-                Object.values(this.subscribers).forEach(onChange => onChange(key, undefined, defaultValue));
+                Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(key, undefined, defaultValue));
                 return defaultValue;
             }
             return value;
@@ -65,7 +65,7 @@ export default class Store {
     put(key, value) {
         const before = JSON.parse(localStorage.getItem(key));
         localStorage.setItem(key, JSON.stringify(value));
-        Object.values(this.subscribers).forEach(onChange => onChange(key, before, value));
+        Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(before, value));
     }
 
     getBackendAlive(backend) {

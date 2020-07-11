@@ -12,8 +12,8 @@ export class WheelSelectInput {
         element.onwheel = this.onWheel.bind(this);
         this.element = element.getElementsByClassName("value")[0];
 
-        this.store.subscribe((key, before, after) => {
-            if (key === this.id && before !== after) {
+        this.store.subscribe(this.id, (before, after) => {
+            if (before !== after) {
                 this.onKeyChanged(after);
             }
         });
@@ -40,7 +40,6 @@ export class WheelSelectInput {
             }
         }
         const option = this.options[this.selected];
-        console.info(this.id, "onKeyChanged", key, option);
         this.element.textContent = this.formatKey ? this.formatKey(option.key) : option.key;
         if (this.onChange) this.onChange(option.key, option.value);
     }
@@ -60,8 +59,8 @@ export class WheelValueInput {
         element.onwheel = this.onWheel.bind(this);
         this.element = element.getElementsByClassName("value")[0];
 
-        this.store.subscribe((key, before, after) => {
-            if (key === this.id && before !== after) {
+        this.store.subscribe(this.id, (before, after) => {
+            if (before !== after) {
                 this.onValueChanged();
             }
         });

@@ -118,7 +118,7 @@ export class Backends {
 
     constructor(store, core) {
         this.store = store;
-        this.store.subscribe(this.onChange.bind(this))
+        this.store.subscribe(BACKEND_KEY, this.onBackendChange.bind(this))
 
         this.core = core;
 
@@ -243,8 +243,8 @@ export class Backends {
         this.handleCalculationState();
     }
 
-    onChange(key, before, after) {
-        if (key === BACKEND_KEY && before !== after) {
+    onBackendChange(before, after) {
+        if (before !== after) {
             this.selectedBackend = this.backends[after];
             this.store.max_workers = this.selectedBackend.max_workers;
         }
