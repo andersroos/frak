@@ -154,7 +154,7 @@ export default class Gui {
                 {key: 'max', value: MAX_WORKERS},
             ],
             onChange: (key, value) => {
-                this.store.worker_count = value;
+                this.store.workers_value = value;
             },
             formatKey: v => {
                 if (v === 'max') {
