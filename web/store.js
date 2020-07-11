@@ -17,7 +17,9 @@ export default class Store {
         this.subscribers = {}
         this.createProperty(BACKEND_KEY, "java");
         this.createProperty("state", STATE_WAITING_STARTUP);
-        this.createProperty("workers", 24);
+        this.createProperty("workers", "max");
+        this.createProperty("workers_value", 8000);
+        this.createProperty("max_workers", 1);
         this.createProperty("coordinates", {
             x0_start_index: Math.round(-0.5 * X_SIZE),
             y0_start_index: Math.round(-0.5 * Y_SIZE),
@@ -66,6 +68,10 @@ export default class Store {
 
     putBackendAlive(backend, value) {
         this.put("backendAlive-" + backend, value);
+    }
+
+    getWorkerCount() {
+        return Math.min(this.max_workers, this.workers_value);
     }
 
 }

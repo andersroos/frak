@@ -1,7 +1,7 @@
 import {calculateWeight, formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
-import {WheelSelectStore, WheelValueStore} from "./inputs";
+import {WheelSelectInput, WheelValueInput} from "./inputs";
 
 const QBRT_2 = Math.pow(2, 1/3);
 
@@ -201,7 +201,7 @@ export default class Gui {
         }
 
         // Max n.
-        this.maxNInput = new WheelValueStore({
+        this.maxNInput = new WheelValueInput({
             store: this.store,
             id: 'max_n',
             onChangeByUser: v => {
@@ -212,7 +212,7 @@ export default class Gui {
         });
 
         // Backend.
-        this.backendInput = new WheelSelectStore({
+        this.backendInput = new WheelSelectInput({
             id: "backend",
             store: this.store,
             options: backendList.map(backend => ({key: backend, value: backend})),
@@ -224,13 +224,27 @@ export default class Gui {
         });
 
         // Worker count.
-        this.workerCountInput = new ValueWheelLocalStorage({
-            inputId: 'worker-count',
-            newValue: (v, direction) => direction ? Math.max(1, v - 1) : v + 1,
-            formatValue: v => formatInt(v, {padTo: 10, space: 3}),
-            defaultValue: 24,
+        this.workerCountInput = new WheelSelectInput({
+            store: this.store,
+            id: 'workers',
+            options: [
+                {key: '1', value: 1},
+                {key: '4', value: 4},
+                {key: '8', value: 8},
+                {key: '24', value: 24},
+                {key: 'max', value: 8000},
+            ],
+            onChange: (key, value) => {
+                this.store.worker_count = value;
+            },
+            formatKey: v => {
+                if (v === 'max') {
+                    v = `max (${this.store.max_workers})`;
+                }
+                return v.padStart(13, " ");
+            }
         });
-        
+
         // Colors.
         this.colorsInput = new OptionWheelLocalStorage({
             inputId: 'colors',
@@ -379,7 +393,7 @@ export default class Gui {
         const elapsed = this.core.getElapsedTime();
         document.getElementById('elapsed').textContent = formatFloat(elapsed ? (elapsed / 1000) : 0, {padTo: 7, dec: 2});
         
-        document.getElementById("weight").textContent = formatFloat(calculateWeight(statistics, this.core.max_n), {human: true, dec: 4, padTo: 9});
+        document.getElementById("weight").textContent = formatFloat(calculateWeight(statistics, this.store.max_n), {human: true, dec: 4, padTo: 9});
         
         const format = number => formatInt(number, {space: 3, padTo: 9});
         

@@ -1,6 +1,6 @@
 
 
-export class WheelSelectStore {
+export class WheelSelectInput {
     constructor({store, id, onChange, options, formatKey}) {
         this.store = store;
         this.id = id;
@@ -47,7 +47,7 @@ export class WheelSelectStore {
 }
 
 
-export class WheelValueStore {
+export class WheelValueInput {
     constructor({store, id, onChangeByUser, newValue, formatValue}) {
         this.store = store;
         this.id = id;

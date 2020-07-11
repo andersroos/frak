@@ -95,7 +95,9 @@ class RemoteBackend {
         if (e.data instanceof String) {
             const data = JSON.parse(e.data);
             switch (data.op) {
-                case CONFIG: this.max_workers = data.max_workers; break;
+                case CONFIG:
+                    this.max_workers = data.max_workers; this.backends.onConfig(this.key); break;
+                    break;
                 default: throw new Error($`unknown op ${data.op} from ${this.key}`);
             }
         }
@@ -184,7 +186,7 @@ export class Backends {
 
         this.currenctCalculation.id = Date.now();
         this.currenctCalculation.backend = this.selectedBackend;
-        this.currenctCalculation.workers = Math.min(this.selectedBackend.max_workers, this.store.workers);
+        this.currenctCalculation.workers = this.store.getWorkerCount();
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
         const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.currenctCalculation;
@@ -244,6 +246,13 @@ export class Backends {
     onChange(key, before, after) {
         if (key === BACKEND_KEY && before !== after) {
             this.selectedBackend = this.backends[after];
+            this.store.max_workers = this.selectedBackend.max_workers;
+        }
+    }
+
+    onConfig(backend) {
+        if (backend === this.store.backend) {
+            this.store.max_workers = this.backends[backend].max_workers;
         }
     }
 
