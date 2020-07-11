@@ -85,6 +85,15 @@ class RemoteBackend {
         // TODO
     }
 
+    start({id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
+        console.info("start", workers);
+        // this.dispatcher.postMessage({op: START, id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers});
+    }
+
+    abort({id}) {
+        // this.dispatcher.postMessage({op: ABORT, id});
+    }
+
     onOpen(e) {
         console.info(this.key, "open", e);
         this.store.putBackendAlive(this.key, true);

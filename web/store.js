@@ -17,17 +17,18 @@ export default class Store {
     constructor() {
         this.subscriberId = 0;
         this.subscribers = {};
+        this.data = {};
         this.createProperty(BACKEND_KEY, "java");
-        this.createProperty("state", STATE_WAITING_STARTUP);
+        this.createProperty("state", STATE_WAITING_STARTUP, false);
         this.createProperty("workers", "max");
-        this.createProperty("workers_value", MAX_WORKERS);
-        this.createProperty("max_workers", 1);
+        this.createProperty("workers_value", MAX_WORKERS, false);
+        this.createProperty("max_workers", 1, false);
         this.createProperty("coordinates", {
             x0_start_index: Math.round(-0.5 * X_SIZE),
             y0_start_index: Math.round(-0.5 * Y_SIZE),
             x0_delta: 4 / X_SIZE,
             y0_delta: 4 / Y_SIZE,
-        });
+        }, false);
         this.createProperty("max_n", 32 * 1024);
         this.createProperty("colors", "C64");
         this.createProperty("color_cycle", 0);
@@ -35,11 +36,19 @@ export default class Store {
         this.createProperty("color_offset", "OFF");
     }
 
-    createProperty(key, defaultValue) {
-        Object.defineProperty(this, key, {
-            get: () => this.get(key, defaultValue),
-            set: value => this.put(key, value),
-        });
+    createProperty(key, defaultValue, persistent=true) {
+        if (persistent) {
+            Object.defineProperty(this, key, {
+                get: () => this.getPersistent(key, defaultValue),
+                set: value => this.putPersistent(key, value),
+            });
+        }
+        else {
+            Object.defineProperty(this, key, {
+                get: () => this.getVolatile(key, defaultValue),
+                set: value => this.putVolatile(key, value),
+            });
+        }
     }
 
     subscribe(key, onChange) {
@@ -49,22 +58,38 @@ export default class Store {
         return () => delete this.subscribers[key][id];
     }
 
-    get(key, defaultValue) {
+    getPersistent(key, defaultValue) {
         const value = localStorage.getItem(key);
         if (value === null) {
             if (defaultValue !== undefined) {
-                localStorage.setItem(key, JSON.stringify(defaultValue));
-                Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(undefined, defaultValue));
+                this.putPersistent(key, defaultValue);
                 return defaultValue;
             }
-            return value;
+            return null;
         }
         return JSON.parse(value);
     }
 
-    put(key, value) {
+    putPersistent(key, value) {
         const before = JSON.parse(localStorage.getItem(key));
         localStorage.setItem(key, JSON.stringify(value));
+        Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(before, value));
+    }
+
+    getVolatile(key, defaultValue) {
+        const value = this.data[key];
+        if (value === undefined) {
+            if (defaultValue !== undefined) {
+                this.putVolatile(key, defaultValue);
+                return defaultValue;
+            }
+        }
+        return value;
+    }
+
+    putVolatile(key, value) {
+        const before = this.data[key];
+        this.data[key] = value;
         Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(before, value));
     }
 
@@ -73,11 +98,11 @@ export default class Store {
     }
 
     getBackendAlive(backend) {
-        return this.get("backendAlive-" + backend, false);
+        return this.getVolatile("backendAlive-" + backend, false);
     }
 
     putBackendAlive(backend, value) {
-        this.put("backendAlive-" + backend, value);
+        this.putVolatile("backendAlive-" + backend, value);
     }
 
     getWorkerCount() {
