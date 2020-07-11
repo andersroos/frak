@@ -3,6 +3,15 @@ import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
 import {WheelSelectInput, WheelValueInput} from "./inputs";
 import {MAX_WORKERS} from "./store";
+import {
+    STATE_CALCULATING,
+    STATE_ABORTING,
+    STATE_WAITING,
+    STATE_WAITING_ABORTED,
+    STATE_WAITING_OFFLINE,
+    STATE_WAITING_STARTUP,
+    STATE_WAITING_COMPLETED
+} from "./store";
 
 const QBRT_2 = Math.pow(2, 1/3);
 
@@ -226,6 +235,31 @@ export default class Gui {
                 {value: 0.9,  key: '90%'},
                 {value: 1,    key: 'MIN*DEPTH'},
             ]
+        });
+
+        // State
+        const stateColors = {
+            [STATE_CALCULATING]: "#0f0",
+            [STATE_ABORTING]: "#f80",
+            [STATE_WAITING]: "#0f0",
+            [STATE_WAITING_ABORTED]: "#f80",
+            [STATE_WAITING_OFFLINE]: "#f00",
+            [STATE_WAITING_STARTUP]: "#0f0",
+            [STATE_WAITING_COMPLETED]: "#0f0"
+        };
+        const stateTexts = {
+            [STATE_CALCULATING]: "calculating",
+            [STATE_ABORTING]: "aborting",
+            [STATE_WAITING]: "waiting",
+            [STATE_WAITING_ABORTED]: "calculation aborted",
+            [STATE_WAITING_OFFLINE]: "backend offline",
+            [STATE_WAITING_STARTUP]: "starting up",
+            [STATE_WAITING_COMPLETED]: "calculation completed"
+        }
+        this.store.subscribe("state", (before, after) => {
+            const element = document.getElementById("state");
+            element.textContent = stateTexts[after];
+            element.style.color = stateColors[after];
         });
 
         // Setup paint loop.
