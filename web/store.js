@@ -54,7 +54,7 @@ export default class Store {
         if (value === null) {
             if (defaultValue !== undefined) {
                 localStorage.setItem(key, JSON.stringify(defaultValue));
-                Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(key, undefined, defaultValue));
+                Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(undefined, defaultValue));
                 return defaultValue;
             }
             return value;

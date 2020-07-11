@@ -31,6 +31,11 @@ export class WheelSelectInput {
         this.store[this.id] = this.options[selected].key;
     }
 
+    format() {
+        const option = this.options[this.selected];
+        this.element.textContent = this.formatKey ? this.formatKey(option.key) : option.key;
+    }
+
     onKeyChanged(key) {
         this.selected = 0;
         for (let i = 0; i < this.options.length; ++i) {
@@ -39,8 +44,8 @@ export class WheelSelectInput {
                 break;
             }
         }
+        this.format();
         const option = this.options[this.selected];
-        this.element.textContent = this.formatKey ? this.formatKey(option.key) : option.key;
         if (this.onChange) this.onChange(option.key, option.value);
     }
 }

@@ -163,6 +163,7 @@ export default class Gui {
                 return v.padStart(13, " ");
             }
         });
+        this.store.subscribe("max_workers", () => this.workerCountInput.format())
 
         // Colors.
         this.colorsInput = new WheelSelectInput({
