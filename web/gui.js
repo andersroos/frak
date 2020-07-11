@@ -131,14 +131,17 @@ export default class Gui {
         });
 
         // Backend.
+        let backendAliveUnsubscribe = null;
+        const backendSetAlive = (before, after) => document.getElementById("backend").style.color = after ? "#0f0" : "#f00";
         this.backendInput = new WheelSelectInput({
             id: "backend",
             store: this.store,
             options: backendList.map(backend => ({key: backend, value: backend})),
             formatKey: v => v.padStart(13, " "),
             onChange: () => {
-                const alive = this.store.getBackendAlive(this.store.backend);
-                document.getElementById("backend").style.color = alive ? "#0f0" : "#f00";
+                if (backendAliveUnsubscribe) backendAliveUnsubscribe();
+                backendAliveUnsubscribe = this.store.subscribe(this.store.getBackendAliveKey(this.store.backend), backendSetAlive);
+                backendSetAlive(null, this.store.getBackendAlive(this.store.backend));
             },
         });
 

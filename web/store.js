@@ -68,6 +68,10 @@ export default class Store {
         Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(before, value));
     }
 
+    getBackendAliveKey(backend) {
+        return "backendAlive-" + backend;
+    }
+
     getBackendAlive(backend) {
         return this.get("backendAlive-" + backend, false);
     }

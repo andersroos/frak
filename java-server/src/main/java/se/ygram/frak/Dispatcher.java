@@ -18,10 +18,21 @@ import javax.websocket.server.ServerEndpoint;
 public class Dispatcher {
 
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
+    private static final Object[] currentSessionLock = new Object[0];
+    private static Session currentSession = null;
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
-        logger.info("open " + session.getUserProperties().toString());
+        synchronized (currentSessionLock) {
+            // This implementation only supports one session, so in case a second connects, abort all calculations
+            // and close existing sessions.
+            if (currentSession != null) {
+                currentSession.close();
+                // TODO Abort all calculations.
+            }
+            currentSession = session;
+        }
+        logger.info("open " + session.getId());
         session.getBasicRemote().sendText(
             Json.createObjectBuilder()
                 .add("op", "config")
@@ -36,13 +47,12 @@ public class Dispatcher {
         JsonObject object = Json.createReader(reader).readObject();
         return switch (object.getString("op")) {
             case "start" -> this.start(object);
-            case "interrupt" -> this.interrupt(object);
+            case "abort" -> this.abort(object);
             default -> Json.createObjectBuilder().add("status", "error").add("message", "bad op").build().toString();
         };
     }
 
-    private String interrupt(JsonObject object) {
-        
+    private String abort(JsonObject object) {
         return null;
     }
 
@@ -52,7 +62,12 @@ public class Dispatcher {
 
     @OnClose
     public void onClose(Session session, CloseReason closeReason) {
-        logger.info("close " + session.getUserProperties().toString());
+        synchronized (currentSessionLock) {
+            if (currentSession != null && session.getId().equals(currentSession.getId())) {
+                currentSession = null;
+            }
+        }
+        logger.info("close " + session.getId());
     }
 
 }
