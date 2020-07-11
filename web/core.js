@@ -82,7 +82,7 @@ export default class Core {
             max_n,
             benchmark: "00",
             onBeforeStart: () => {
-                this.gui.colorScaleInput.setValue(80.63492856264527);
+                this.store.color_scale = 80.63492856264527;
                 this.screen.clear();
                 this.pushHistory();
             },
@@ -101,7 +101,7 @@ export default class Core {
             max_n,
             benchmark: "01",
             onBeforeStart: () => {
-                this.gui.colorScaleInput.setValue(512);
+                this.store.color_scale = 512;
                 this.screen.clear();
                 this.pushHistory();
             },

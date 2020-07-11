@@ -10,6 +10,8 @@ export const STATE_CALCULATING = "calculating";
 
 export const BACKEND_KEY = "backend";
 
+export const MAX_WORKERS = 8192;
+
 export default class Store {
 
     constructor() {
@@ -18,7 +20,7 @@ export default class Store {
         this.createProperty(BACKEND_KEY, "java");
         this.createProperty("state", STATE_WAITING_STARTUP);
         this.createProperty("workers", "max");
-        this.createProperty("workers_value", 8000);
+        this.createProperty("workers_value", MAX_WORKERS);
         this.createProperty("max_workers", 1);
         this.createProperty("coordinates", {
             x0_start_index: Math.round(-0.5 * X_SIZE),
@@ -27,6 +29,10 @@ export default class Store {
             y0_delta: 4 / Y_SIZE,
         });
         this.createProperty("max_n", 32 * 1024);
+        this.createProperty("colors", "C64");
+        this.createProperty("color_cycle", 0);
+        this.createProperty("color_scale", 256);
+        this.createProperty("color_offset", "OFF");
     }
 
     createProperty(key, defaultValue) {

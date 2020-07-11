@@ -2,6 +2,7 @@ import {calculateWeight, formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
 import {WheelSelectInput, WheelValueInput} from "./inputs";
+import {MAX_WORKERS} from "./store";
 
 const QBRT_2 = Math.pow(2, 1/3);
 
@@ -73,97 +74,6 @@ class MouseState {
 }
 
 
-class ValueWheelLocalStorage {
-    constructor({inputId, onChange, onChangeByUser, newValue, formatValue, defaultValue}) {
-        this.inputId = inputId;
-        this.value = Number.parseFloat(localStorage.getItem(inputId) || defaultValue);
-        this.onChange = onChange;
-        this.onChangeByUser = onChangeByUser;
-        this.newValue = newValue;
-        this.formatValue = formatValue;
-
-        const element = document.getElementById(inputId);
-        element.onwheel = this.onWheel.bind(this);
-        
-        this.element = element.getElementsByClassName("value")[0];
-        
-        this.onValueChanged();
-    }
-    
-    setValue(value) {
-        this.value = value;
-        this.onValueChanged();
-    }
-    
-    getValue() {
-        return this.value;
-    }
-    
-    onWheel(event) {
-        this.value = this.newValue(this.value, event.deltaY > 0);
-        this.onValueChanged();
-        if (this.onChangeByUser) this.onChangeByUser(this.value);
-    }
-    
-    onValueChanged() {
-        this.element.textContent = this.formatValue(this.value);
-        localStorage.setItem(this.inputId, this.value.toString());
-        if (this.onChange) this.onChange(this.value);
-    }
-}
-
-
-class OptionWheelLocalStorage {
-    
-    constructor({inputId, options, onChange, onChangeByUser}) {
-        this.inputId = inputId;
-        this.options = options;
-        this.selected = 0;
-        this.onChange = onChange;
-        this.onChangeByUser = onChangeByUser;
-
-        const element = document.getElementById(inputId);
-        element.onwheel = this.onWheel.bind(this);
-        
-        this.element = element.getElementsByClassName("value")[0];
-        this.setKey(localStorage.getItem(inputId));
-    }
-    
-    setKey(key) {
-        this.selected = 0;
-        for (let i = 0; i < this.options.length; ++i) {
-            if (this.getKey(i) === key) {
-                this.selected = i;
-                break;
-            }
-        }
-        this.onSelectedChanged();
-    }
-    
-    getKey(i) {
-        return this.options[i === undefined ? this.selected : i].label.replace(/\s/, '');
-    }
-    
-    onWheel(event) {
-        if (event.deltaY > 0) {
-            this.selected = Math.max(0, this.selected - 1);
-        }
-        else {
-            this.selected = Math.min(this.selected + 1, this.options.length - 1);
-        }
-        this.onSelectedChanged();
-        if (this.onChangeByUser) this.onChangeByUser(this.getKey());
-    }
-    
-    onSelectedChanged() {
-        const option = this.options[this.selected];
-        this.element.textContent = option.label;
-        const key = this.getKey();
-        localStorage.setItem(this.inputId, key);
-        this.onChange(option.value, key);
-    }
-}
-
 export default class Gui {
     
     constructor(core, store, screen, backendList) {
@@ -173,20 +83,20 @@ export default class Gui {
         this.store = store;
 
         // Init canvas and screen.
-        
+
         this.context = document.getElementById("canvas").getContext("2d");
         this.context.canvas.width = X_SIZE;
         this.context.canvas.height = Y_SIZE;
-        
+
         this.imageBytesRef = this.screen.refImageBytes();
         const uint8ClampedArray = new Uint8ClampedArray(this.imageBytesRef.buffer, this.imageBytesRef.byteOffset, this.imageBytesRef.byteLength);
         this.imageData = new ImageData(uint8ClampedArray, X_SIZE, Y_SIZE);
 
         this.paintTime = 0;
         this.paintCount = 0;
-        
+
         this.mouseState = new MouseState(this.context.canvas, () => this.onMouseEvent(), (start, end) => this.onMouseRect(start, end));
-        
+
         // Histogram.
         const svg = document.getElementById('histogram');
         svg.setAttribute("height", HISTOGRAM_SIZE * 2);
@@ -217,10 +127,10 @@ export default class Gui {
             store: this.store,
             options: backendList.map(backend => ({key: backend, value: backend})),
             formatKey: v => v.padStart(13, " "),
-        });
-        this.store.subscribe((key, after, before) => {
-            const alive = this.store.getBackendAlive(this.store.backend);
-            document.getElementById("backend").style.color = alive ? "#0f0" : "#f00";
+            onChange: () => {
+                const alive = this.store.getBackendAlive(this.store.backend);
+                document.getElementById("backend").style.color = alive ? "#0f0" : "#f00";
+            },
         });
 
         // Worker count.
@@ -232,7 +142,7 @@ export default class Gui {
                 {key: '4', value: 4},
                 {key: '8', value: 8},
                 {key: '24', value: 24},
-                {key: 'max', value: 8000},
+                {key: 'max', value: MAX_WORKERS},
             ],
             onChange: (key, value) => {
                 this.store.worker_count = value;
@@ -246,76 +156,78 @@ export default class Gui {
         });
 
         // Colors.
-        this.colorsInput = new OptionWheelLocalStorage({
-            inputId: 'colors',
-            onChange: (value, key) => {
+        this.colorsInput = new WheelSelectInput({
+            store: this.store,
+            id: 'colors',
+            options: [
+                {
+                    key: 'RAINBOW',
+                    value: "9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3"
+                },
+                {key: 'WHITE*RED', value: "101010-#64-ffffff-#64-ff0000-#24-101010"},
+                {key: 'C64', value: "eef493-#1-a8654a-#1-7ccb8e-#1-000000-#1-eef493"},
+            ],
+            onChange: (key, value) => {
                 this.colors.parse(value);
-                // TODO this.history.update({id: this.core.id, colors: key});
                 this.onEvent();
             },
-            options: [
-                {label: 'RAINBOW', value: "9400d3-#32-4b0082-#32-0000ff-#32-00ff00-#32-ffff00-#32-ff7f00-#32-ff0000-#32-9400d3"},
-                {label: 'WHITE*RED', value: "101010-#64-ffffff-#64-ff0000-#24-101010"},
-                {label: 'C64', value: "eef493-#1-a8654a-#1-7ccb8e-#1-000000-#1-eef493"},
-            ]
         });
-        
+
         // Color cycle.
-        this.colorCycleInput = new OptionWheelLocalStorage({
-            inputId: 'color-cycle',
-            onChange: (value, key) => {
+        this.colorCycleInput = new WheelSelectInput({
+            store: this.store,
+            id: 'color_cycle',
+            onChange: (key, value) => {
                 this.colors.setCycleTime(value * 1000);
-                // TODO this.history.update({id: this.core.id, color_cycle: key});
                 this.onEvent();
             },
             options: [
-                {value: 0,  label: 'OFF'},
-                {value: 10, label: '10 S'},
-                {value: 6,  label: '6 S'},
-                {value: 4,  label: '4 S'},
-                {value: 2,  label: '2 S'},
-                {value: 1,  label: '1 S'},
+                {value: 0, key: 'OFF'},
+                {value: 10, key: '10 S'},
+                {value: 6, key: '6 S'},
+                {value: 4, key: '4 S'},
+                {value: 2, key: '2 S'},
+                {value: 1, key: '1 S'},
             ],
         });
-        
+
         // Color scale.
-        this.colorScaleInput = new ValueWheelLocalStorage({
-            inputId: 'color-scale',
-            onChange: value => {
-                this.colors.setScaleLength(value);
-                // TODO this.history.update({id: this.core.id, color_scale: value});
+        this.colorScaleInput = new WheelValueInput({
+            store: this.store,
+            id: 'color_scale',
+            newValue: (v, direction) => direction ? Math.max(4, v / QBRT_2) : v * QBRT_2,
+            onChange: v => {
+                this.colors.setScaleLength(v);
                 this.onEvent();
             },
-            newValue: (v, direction) => direction ? Math.max(4, v / QBRT_2) : v * QBRT_2,
             formatValue: v => {
                 return formatInt(v, {space: 3});
             },
-            defaultValue: 256
         });
 
         // Color offset.
-        this.colorOffsetImput = new OptionWheelLocalStorage({
-            inputId: 'color-offset',
-            onChange: (value, key) => {
+        this.colorOffsetImput = new WheelSelectInput({
+            store: this.store,
+            id: 'color_offset',
+            onChange: (key, value) => {
                 this.colors.setColorOffset(value);
-                // TODO this.history.update({id: this.core.id, color_offset: key});
                 this.onEvent();
             },
             options: [
-                {value: 0,    label: 'OFF'},
-                {value: 0.1,  label: '10%'},
-                {value: 0.2,  label: '20%'},
-                {value: 0.3,  label: '30%'},
-                {value: 0.4,  label: '40%'},
-                {value: 0.5,  label: '50%'},
-                {value: 0.6,  label: '60%'},
-                {value: 0.7,  label: '70%'},
-                {value: 0.8,  label: '80%'},
-                {value: 0.9,  label: '90%'},
-                {value: 1,    label: 'MIN*DEPTH'},
+                {value: 0,    key: 'OFF'},
+                {value: 0.1,  key: '10%'},
+                {value: 0.2,  key: '20%'},
+                {value: 0.3,  key: '30%'},
+                {value: 0.4,  key: '40%'},
+                {value: 0.5,  key: '50%'},
+                {value: 0.6,  key: '60%'},
+                {value: 0.7,  key: '70%'},
+                {value: 0.8,  key: '80%'},
+                {value: 0.9,  key: '90%'},
+                {value: 1,    key: 'MIN*DEPTH'},
             ]
         });
-        
+
         // Setup paint loop.
         this.lastEvent = performance.now();
         const paint = () => {

@@ -48,10 +48,11 @@ export class WheelSelectInput {
 
 
 export class WheelValueInput {
-    constructor({store, id, onChangeByUser, newValue, formatValue}) {
+    constructor({store, id, onChangeByUser, onChange, newValue, formatValue}) {
         this.store = store;
         this.id = id;
         this.onChangeByUser = onChangeByUser;
+        this.onChange = onChange;
         this.newValue = newValue;
         this.formatValue = formatValue;
 
@@ -71,11 +72,12 @@ export class WheelValueInput {
     onWheel(event) {
         this.store[this.id] = this.newValue(this.store[this.id], event.deltaY > 0);
         this.onValueChanged();
-        if (this.onChangeByUser) this.onChangeByUser(this.value);
+        if (this.onChangeByUser) this.onChangeByUser(this.store[this.id]);
     }
 
     onValueChanged() {
         this.element.textContent = this.formatValue(this.store[this.id]);
+        if (this.onChange) this.onChange(this.store[this.id]);
     }
 }
 
