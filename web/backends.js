@@ -95,9 +95,7 @@ class RemoteBackend {
         if (e.data instanceof String) {
             const data = JSON.parse(e.data);
             switch (data.op) {
-                case CONFIG:
-                    this.max_workers = data.max_workers; this.backends.onConfig(this.key); break;
-                    break;
+                case CONFIG: this.max_workers = data.max_workers; this.backends.onConfig(this.key); break;
                 default: throw new Error($`unknown op ${data.op} from ${this.key}`);
             }
         }
@@ -107,7 +105,6 @@ class RemoteBackend {
 
     onClose(e) {
         this.store.putBackendAlive(this.key, false);
-        console.info(this.key, "close", e);
     }
 }
 
@@ -161,7 +158,8 @@ export class Backends {
                     this.start();
                 }
                 else {
-                    this.state = STATE_WAITING_OFFLINE;
+                    this.store.state = STATE_WAITING_OFFLINE;
+                    this.requestedCalculation = null;
                 }
             }
         }
