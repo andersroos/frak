@@ -2,7 +2,7 @@
 // To dispatcher.
 export const START = "start";
 export const ABORT = "abort";
-export const CONFIG = "interrupt";
+export const CONFIG = "config";
 
 // From dispatcher.
 export const BLOCK_STARTED = "block-started";

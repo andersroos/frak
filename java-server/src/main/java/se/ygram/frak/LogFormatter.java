@@ -1,5 +1,7 @@
 package se.ygram.frak;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +26,16 @@ public class LogFormatter extends Formatter {
 
         String message = this.formatMessage(record);
 
-        return String.format("%s %-7s [%s%s] %s\n", timestamp, logLevel, thread, location, message);
+        String exception = "";
+        Throwable throwable = record.getThrown();
+        if (throwable != null) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            pw.close();
+            exception = "\n" + sw.toString();
+        }
+
+        return String.format("%s %-7s [%s%s] %s %s\n", timestamp, logLevel, thread, location, message, exception);
     }
 }

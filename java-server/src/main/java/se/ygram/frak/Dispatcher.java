@@ -2,6 +2,7 @@ package se.ygram.frak;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.json.Json;
@@ -36,7 +37,7 @@ public class Dispatcher {
         session.getBasicRemote().sendText(
             Json.createObjectBuilder()
                 .add("op", "config")
-                .add("max_wokers", Runtime.getRuntime().availableProcessors())
+                .add("max_workers", Runtime.getRuntime().availableProcessors())
                 .build()
                 .toString()
         );
@@ -57,6 +58,18 @@ public class Dispatcher {
     }
 
     private String start(JsonObject object) {
+        String id = object.getString("id");
+        int x_size = object.getInt("x_size");
+        int y_size = object.getInt("y_size");
+        int max_n = object.getInt("max_n");
+        double x0_start_index = object.getJsonNumber("x0_start_index").doubleValue();
+        double y0_start_index = object.getJsonNumber("y0_start_index").doubleValue();
+        double x0_delta = object.getJsonNumber("x0_delta").doubleValue();
+        double y0_delta = object.getJsonNumber("y0_delta").doubleValue();
+        int workers = object.getInt("workers");
+
+        logger.info(String.format("starting %s", id));
+
         return null;
     }
 

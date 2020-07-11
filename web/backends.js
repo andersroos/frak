@@ -9,7 +9,7 @@ import {
     STATE_WAITING_COMPLETED
 } from "./store";
 import {guessBrowser, guessHardwareConcurrency} from "./util";
-import {ABORTED, BLOCK_COMPLETED, BLOCK_STARTED, COMPLETED, START, ABORT} from "./op";
+import {ABORTED, BLOCK_COMPLETED, BLOCK_STARTED, COMPLETED, START, ABORT, CONFIG} from "./op";
 import {X_SIZE, Y_SIZE} from "./dimensions";
 
 
@@ -82,16 +82,16 @@ class RemoteBackend {
     }
 
     reconnect() {
-        // TODO
+        this.connect();
     }
 
     start({id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
-        console.info("start", workers);
-        // this.dispatcher.postMessage({op: START, id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers});
+        console.info("start", id, workers);
+        this.connection.send(JSON.stringify({op: START, id, x_size, y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}));
     }
 
     abort({id}) {
-        // this.dispatcher.postMessage({op: ABORT, id});
+        this.connection.send(JSON.stringify({op: ABORT, id}));
     }
 
     onOpen(e) {
@@ -100,12 +100,12 @@ class RemoteBackend {
     }
 
     onMessage(e) {
-        console.info(this.key, "message", e);
-        if (e.data instanceof String) {
+        console.info(this.key, "message", e, typeof e.data);
+        if (typeof e.data === "string") {
             const data = JSON.parse(e.data);
             switch (data.op) {
                 case CONFIG: this.max_workers = data.max_workers; this.backends.onConfig(this.key); break;
-                default: throw new Error($`unknown op ${data.op} from ${this.key}`);
+                default: throw new Error(`unknown op ${data.op} from ${this.key}`);
             }
         }
         else {
@@ -113,6 +113,7 @@ class RemoteBackend {
     }
 
     onClose(e) {
+        console.info(this.key, "close", e);
         this.store.putBackendAlive(this.key, false);
     }
 }
@@ -191,7 +192,7 @@ export class Backends {
         this.currenctCalculation = this.requestedCalculation;
         this.requestedCalculation = null;
 
-        this.currenctCalculation.id = Date.now();
+        this.currenctCalculation.id = String(Date.now());
         this.currenctCalculation.backend = this.selectedBackend;
         this.currenctCalculation.workers = this.store.getWorkerCount();
         this.currenctCalculation.x_size = X_SIZE;
@@ -258,8 +259,9 @@ export class Backends {
     }
 
     onConfig(backend) {
-        if (backend === this.store.backend) {
-            this.store.max_workers = this.backends[backend].max_workers;
+        const b = this.backends[backend];
+        if (backend === this.store.backend && this.store.max_workers !== b.max_workers) {
+            this.store.max_workers = b.max_workers;
         }
     }
 

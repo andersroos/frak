@@ -126,7 +126,7 @@ export default class Gui {
             onChangeByUser: v => {
                 this.core.startFromNewMaxN();
             },
-            newValue: (v, direction) => direction ? Math.max(1, v / QBRT_2) : v * QBRT_2,
+            newValue: (v, direction) => direction ? Math.max(1, v / QBRT_2) : Math.min(v * QBRT_2, 1024 * 1024 * 1024),
             formatValue: v => formatInt(v, {padTo: 12, space: 3}),
         });
 
