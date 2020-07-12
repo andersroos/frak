@@ -19,10 +19,16 @@ public class Worker implements Runnable {
 
     private final Session session;
     private final Block block;
+    private boolean completed;
 
     Worker(Session session, Block block) {
         this.session = session;
         this.block = block;
+        this.completed = false;
+    }
+
+    public boolean isCompleted() {
+        return completed;
     }
 
     @Override
@@ -82,8 +88,9 @@ public class Worker implements Runnable {
             }
             session.getBasicRemote().sendBinary(bytes);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("sending data failed", e);
         }
+        this.completed = true;
     }
 }
 

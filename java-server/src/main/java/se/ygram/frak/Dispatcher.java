@@ -23,7 +23,7 @@ public class Dispatcher {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     private static final Object[] currentSessionLock = new Object[0];
     private static Session currentSession = null;
-    private static ExecutorService currentSessionExecutorService;
+    private static WorkerExecutorService currentSessionThreads;
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
@@ -32,7 +32,6 @@ public class Dispatcher {
             // and close existing sessions.
             if (currentSession != null) {
                 currentSession.close();
-                // TODO Abort all calculations.
             }
             currentSession = session;
         }
@@ -64,9 +63,9 @@ public class Dispatcher {
     private String abort(Session session, JsonObject object) {
         String id = object.getString("id");
         logger.info(format("aborting %s %s", session.getId(), id));
-        currentSessionExecutorService.shutdownNow();
+        currentSessionThreads.shutdownNow();
         try {
-            if (!currentSessionExecutorService.awaitTermination(2, TimeUnit.MINUTES)) {
+            if (!currentSessionThreads.awaitTermination(2, TimeUnit.MINUTES)) {
                 logger.warning(format("await termination timeout when aborting for session %s", session.getId()));
             }
         } catch (InterruptedException e) {
@@ -95,36 +94,28 @@ public class Dispatcher {
         logger.info(format("starting %s %s %s", session.getId(), id, workers));
 
         synchronized (currentSessionLock) {
-            currentSessionExecutorService = Executors.newFixedThreadPool(workers);
+            currentSessionThreads = new WorkerExecutorService(
+                session,
+                workers,
+                x_size / block_x_size * y_size / block_y_size,
+                () -> {
+                    session.getBasicRemote().sendText(Json.createObjectBuilder()
+                        .add("op", Op.COMPLETED)
+                        .add("id", id)
+                        .build().toString()
+                    );
+                    logger.info(format("completed %s %s", session.getId(), id));
+                }
+            );
         }
 
         for (int y = 0; y < y_size; y += block_y_size) {
             for (int x = 0; x < x_size; x += block_x_size) {
-                currentSessionExecutorService.execute(new Worker(
-                    session,
-                    new Block(id, x, y, block_x_size, block_y_size, x0_start_index + x, x0_delta, y0_start_index + y, y0_delta, max_n)
-                ));
+                currentSessionThreads.calculateBlock(new Block(id, x, y, block_x_size, block_y_size, x0_start_index + x, x0_delta, y0_start_index + y, y0_delta, max_n));
             }
         }
 
-        currentSessionExecutorService.shutdown();
-
-        try {
-            if (!currentSessionExecutorService.awaitTermination(1, TimeUnit.HOURS)) {
-                logger.warning(format("await termination timeout when calculating for session %s", session.getId()));
-                return null;
-            }
-        } catch (InterruptedException e) {
-            logger.warning(format("await termination interrupted when calculating for session %s", session.getId()));
-            return null;
-        }
-
-        logger.info(format("completed %s %s", session.getId(), id));
-
-        return Json.createObjectBuilder()
-            .add("op", Op.COMPLETED)
-            .add("id", id)
-            .build().toString();
+        return null;
     }
 
     @OnClose
@@ -133,9 +124,9 @@ public class Dispatcher {
             if (currentSession != null && session.getId().equals(currentSession.getId())) {
                 currentSession = null;
             }
-            if (currentSessionExecutorService != null && currentSessionExecutorService.isTerminated()) {
-                currentSessionExecutorService.shutdownNow();
-                currentSessionExecutorService = null;
+            if (currentSessionThreads != null && currentSessionThreads.isTerminated()) {
+                currentSessionThreads.shutdownNow();
+                currentSessionThreads = null;
             }
         }
         logger.info("close " + session.getId());
