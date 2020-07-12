@@ -21,7 +21,7 @@ public class Dispatcher {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     private static final Object[] currentSessionLock = new Object[0];
     private static Session currentSession = null;
-    private static ThreadPoolExecutor threads;
+    private static final ThreadPoolExecutor threads;
     static {
         int cores = Runtime.getRuntime().availableProcessors();
         threads = new ThreadPoolExecutor(
@@ -47,7 +47,7 @@ public class Dispatcher {
         logger.info("open " + session.getId());
         session.getBasicRemote().sendText(
             Json.createObjectBuilder()
-                .add("op", "config")
+                .add("op", Op.CONFIG)
                 .add("endian", "little")
                 .add("max_workers", Runtime.getRuntime().availableProcessors())
                 .build()

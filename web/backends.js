@@ -13,6 +13,10 @@ import {ABORTED, BLOCK_COMPLETED, BLOCK_STARTED, COMPLETED, START, ABORT, CONFIG
 import {X_SIZE, Y_SIZE} from "./dimensions";
 
 
+// Create a calculation id, should be a string of length 16.
+const createId = () => String(Date.now()).padStart(16, '0');
+
+
 class LocalBackend {
 
     constructor(store, backends, key) {
@@ -129,22 +133,14 @@ class RemoteBackend {
     onBlockCompleted(buffer) {
         const data = new DataView(buffer);
 
-        let end;
+        const id = this.decoder.decode(buffer.slice(0, 16));
 
-        for (end = 0; end < 22 && data.getUint8(end) !== 0; ++end) {}
-        const op = this.decoder.decode(buffer.slice(0, end));
-        assert(op === BLOCK_COMPLETED, "expected op to be block-completed when message is binary");
+        const x_start = data.getUint32(16, true);
+        const y_start = data.getUint32(20, true);
+        const x_size = data.getUint32(24, true);
+        const y_size = data.getUint32(28, true);
 
-        for (end = 22; end < 44 && data.getUint8(end) !== 0; ++end) {}
-        const id = this.decoder.decode(buffer.slice(22, end));
-
-        const x_start = data.getUint32(44, true);
-        const y_start = data.getUint32(48, true);
-        const x_size = data.getUint32(52, true);
-        const y_size = data.getUint32(56, true);
-        const max_n = data.getUint32(60, true);
-
-        this.backends.onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes: buffer.slice(64, buffer.length)});
+        this.backends.onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes: buffer.slice(32, buffer.length)});
     }
 }
 
@@ -222,7 +218,7 @@ export class Backends {
         this.currenctCalculation = this.requestedCalculation;
         this.requestedCalculation = null;
 
-        this.currenctCalculation.id = String(Date.now());
+        this.currenctCalculation.id = createId();
         this.currenctCalculation.backend = this.selectedBackend;
         this.currenctCalculation.workers = this.store.getWorkerCount();
         this.currenctCalculation.x_size = X_SIZE;
