@@ -38,7 +38,7 @@ java-server-run:
 
 build: c64-build web-build
 
-run: web-run registry-run # TODO java-server-run
+run: web-run registry-run java-server-run
 
 clean:
 	rm -f web/*.bc web/corelib.wasm web/corelib.js

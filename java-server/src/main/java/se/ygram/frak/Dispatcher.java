@@ -85,13 +85,13 @@ public class Dispatcher {
         int block_x_size = object.getInt("block_x_size");
         int block_y_size = object.getInt("block_y_size");
         int max_n = object.getInt("max_n");
-        int x0_start_index = object.getInt("x0_start_index");
-        int y0_start_index = object.getInt("y0_start_index");
+        long x0_start_index = object.getJsonNumber("x0_start_index").longValue();
+        long y0_start_index = object.getJsonNumber("y0_start_index").longValue();
         double x0_delta = object.getJsonNumber("x0_delta").doubleValue();
         double y0_delta = object.getJsonNumber("y0_delta").doubleValue();
         int workers = object.getInt("workers");
 
-        logger.info(format("starting %s %s %s", session.getId(), id, workers));
+        logger.info(format("starting %s %s %s %d %s %d", session.getId(), id, workers, x0_start_index, Double.valueOf(x0_delta).toString(), max_n));
 
         synchronized (currentSessionLock) {
             currentSessionThreads = new WorkerExecutorService(

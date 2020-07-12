@@ -92,7 +92,7 @@ class RemoteBackend {
     }
 
     start({id, x_size, y_size, block_x_size, block_y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
-        console.info("start", id, workers);
+        console.info("start remote", id, workers);
         this.connection.send(JSON.stringify({op: START, id, x_size, y_size, block_y_size, block_x_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}));
     }
 
@@ -226,7 +226,7 @@ export class Backends {
         this.currenctCalculation.y_size = Y_SIZE;
         this.currenctCalculation.block_x_size = X_SIZE;
         this.currenctCalculation.block_y_size = 1;
-        // this.currenctCalculation.block_y_size = Y_SIZE / 4;
+        // this.currenctCalculation.block_y_size = Y_SIZE / 8;
         const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.currenctCalculation;
         this.store.coordinates = {x0_delta, y0_delta, x0_start_index, y0_start_index};
 

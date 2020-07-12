@@ -16,6 +16,18 @@ dependencies {
     implementation 'org.glassfish.tyrus:tyrus-container-grizzly-server:1.12'
 }
 
+mainClassName = 'se.ygram.frak.Main'
+
 application {
-    mainClassName = 'se.ygram.frak.Main'
+}
+
+task jarWithDependencies(type: Jar) {
+    manifest {
+        attributes "Main-Class": "$mainClassName"
+    }
+    archivesBaseName = 'all-in-one-jar'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
 }

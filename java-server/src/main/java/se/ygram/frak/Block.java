@@ -8,12 +8,12 @@ public class Block {
     public final int x_size;
     public final double y0_delta;
     public final double x0_delta;
-    public final int y0_start_index;
-    public final int x0_start_index;
+    public final long y0_start_index;
+    public final long x0_start_index;
     public final int max_n;
 
     Block(String id, int x_start, int y_start, int x_size, int y_size,
-          int x0_start_index, double x0_delta, int y0_start_index, double y0_delta, int max_n)
+          long x0_start_index, double x0_delta, long y0_start_index, double y0_delta, int max_n)
     {
         this.id = id;
         this.x_start = x_start;
