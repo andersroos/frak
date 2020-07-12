@@ -75,6 +75,7 @@ class RemoteBackend {
         if (this.connection && this.connection.readyState !== WebSocket.CONNECTING) {
             this.connection.close();
         }
+        console.info("connecting to", this.url);
         this.connection = new WebSocket(this.url);
         this.connection.binaryType = "arraybuffer";
         this.connection.onmessage = this.onMessage.bind(this);
@@ -106,15 +107,19 @@ class RemoteBackend {
     }
 
     onMessage(e) {
-        console.info(this.key, "message", e, typeof e.data);
         if (typeof e.data === "string") {
             const data = JSON.parse(e.data);
+            console.info(this.key, "message", data.op, data);
             switch (data.op) {
                 case CONFIG: this.onConfig(data); break;
+                case ABORTED: this.backends.onAborted(data); break;
+                case BLOCK_STARTED: this.backends.onBlockStarted(data); break;
+                case COMPLETED: this.backends.onCompleted(data); break;
                 default: throw new Error(`unknown op ${data.op} from ${this.key}`);
             }
         }
         else {
+            console.info(this.key, "message", BLOCK_COMPLETED, e);
             this.onBlockCompleted(e.data);
         }
     }
@@ -132,14 +137,11 @@ class RemoteBackend {
 
     onBlockCompleted(buffer) {
         const data = new DataView(buffer);
-
         const id = this.decoder.decode(buffer.slice(0, 16));
-
         const x_start = data.getUint32(16, true);
         const y_start = data.getUint32(20, true);
         const x_size = data.getUint32(24, true);
         const y_size = data.getUint32(28, true);
-
         this.backends.onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes: buffer.slice(32, buffer.length)});
     }
 }

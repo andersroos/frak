@@ -14,6 +14,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+import static java.lang.String.format;
+
 
 @ServerEndpoint("/")
 public class Dispatcher {
@@ -21,17 +23,7 @@ public class Dispatcher {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     private static final Object[] currentSessionLock = new Object[0];
     private static Session currentSession = null;
-    private static final ThreadPoolExecutor threads;
-    static {
-        int cores = Runtime.getRuntime().availableProcessors();
-        threads = new ThreadPoolExecutor(
-            cores,
-            cores,
-            1, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>()
-        );
-        threads.prestartAllCoreThreads();
-    }
+    private static ExecutorService currentSessionExecutorService;
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
@@ -58,15 +50,33 @@ public class Dispatcher {
     @OnMessage
     public String onMessage(Reader reader, Session session) {
         JsonObject object = Json.createReader(reader).readObject();
-        return switch (object.getString("op")) {
+        String op = object.getString("op");
+        return switch (op) {
             case "start" -> this.start(session, object);
             case "abort" -> this.abort(session, object);
-            default -> Json.createObjectBuilder().add("status", "error").add("message", "bad op").build().toString();
+            default -> Json.createObjectBuilder()
+                .add("status", "error")
+                .add("message", format("bad op %s", op))
+                .build().toString();
         };
     }
 
     private String abort(Session session, JsonObject object) {
-        return null;
+        String id = object.getString("id");
+        logger.info(format("aborting %s %s", session.getId(), id));
+        currentSessionExecutorService.shutdownNow();
+        try {
+            if (!currentSessionExecutorService.awaitTermination(2, TimeUnit.MINUTES)) {
+                logger.warning(format("await termination timeout when aborting for session %s", session.getId()));
+            }
+        } catch (InterruptedException e) {
+            logger.warning(format("await termination interrupted when aborting for session %s", session.getId()));
+        }
+        logger.info(format("aborted %s %s", session.getId(), id));
+        return Json.createObjectBuilder()
+            .add("op", Op.ABORTED)
+            .add("id", id)
+            .build().toString();
     }
 
     private String start(Session session, JsonObject object) {
@@ -82,23 +92,39 @@ public class Dispatcher {
         double y0_delta = object.getJsonNumber("y0_delta").doubleValue();
         int workers = object.getInt("workers");
 
-        logger.info(String.format("starting %s %s", id, workers));
+        logger.info(format("starting %s %s %s", session.getId(), id, workers));
 
         synchronized (currentSessionLock) {
-            threads.setCorePoolSize(workers);
-            threads.setMaximumPoolSize(workers);
+            currentSessionExecutorService = Executors.newFixedThreadPool(workers);
         }
 
         for (int y = 0; y < y_size; y += block_y_size) {
             for (int x = 0; x < x_size; x += block_x_size) {
-                threads.execute(new Worker(
+                currentSessionExecutorService.execute(new Worker(
                     session,
                     new Block(id, x, y, block_x_size, block_y_size, x0_start_index + x, x0_delta, y0_start_index + y, y0_delta, max_n)
                 ));
             }
         }
 
-        return null;
+        currentSessionExecutorService.shutdown();
+
+        try {
+            if (!currentSessionExecutorService.awaitTermination(1, TimeUnit.HOURS)) {
+                logger.warning(format("await termination timeout when calculating for session %s", session.getId()));
+                return null;
+            }
+        } catch (InterruptedException e) {
+            logger.warning(format("await termination interrupted when calculating for session %s", session.getId()));
+            return null;
+        }
+
+        logger.info(format("completed %s %s", session.getId(), id));
+
+        return Json.createObjectBuilder()
+            .add("op", Op.COMPLETED)
+            .add("id", id)
+            .build().toString();
     }
 
     @OnClose
@@ -106,6 +132,10 @@ public class Dispatcher {
         synchronized (currentSessionLock) {
             if (currentSession != null && session.getId().equals(currentSession.getId())) {
                 currentSession = null;
+            }
+            if (currentSessionExecutorService != null && currentSessionExecutorService.isTerminated()) {
+                currentSessionExecutorService.shutdownNow();
+                currentSessionExecutorService = null;
             }
         }
         logger.info("close " + session.getId());
