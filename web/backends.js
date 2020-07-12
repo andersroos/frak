@@ -47,7 +47,6 @@ class LocalBackend {
 
     onMessage(event) {
         const params = event.data;
-        // TODO console.info("got op", params);
         switch (params.op) {
             case BLOCK_COMPLETED: this.backends.onBlockCompleted(params); break;
             case BLOCK_STARTED: this.backends.onBlockStarted(params); break;
@@ -109,7 +108,7 @@ class RemoteBackend {
     onMessage(e) {
         if (typeof e.data === "string") {
             const data = JSON.parse(e.data);
-            console.info(this.key, "message", data.op, data);
+            // console.info(this.key, "message", data.op, data);
             switch (data.op) {
                 case CONFIG: this.onConfig(data); break;
                 case ABORTED: this.backends.onAborted(data); break;
@@ -119,13 +118,13 @@ class RemoteBackend {
             }
         }
         else {
-            console.info(this.key, "message", BLOCK_COMPLETED, e);
+            // console.info(this.key, "message", BLOCK_COMPLETED, e);
             this.onBlockCompleted(e.data);
         }
     }
 
     onClose(e) {
-        console.info(this.key, "close", e);
+        console.info(this.key, "close");
         this.store.putBackendAlive(this.key, false);
     }
 
@@ -226,8 +225,8 @@ export class Backends {
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
         this.currenctCalculation.block_x_size = X_SIZE;
-        // TODO this.currenctCalculation.block_y_size = 1;
-        this.currenctCalculation.block_y_size = Y_SIZE / 4;
+        this.currenctCalculation.block_y_size = 1;
+        // this.currenctCalculation.block_y_size = Y_SIZE / 4;
         const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.currenctCalculation;
         this.store.coordinates = {x0_delta, y0_delta, x0_start_index, y0_start_index};
 
