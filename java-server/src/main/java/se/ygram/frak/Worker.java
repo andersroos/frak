@@ -61,7 +61,6 @@ public class Worker implements Runnable {
             for (int yi = 0; yi < block.y_size; ++yi) {
                 for (int xi = 0; xi < block.x_size; ++xi) {
 
-                    // TODO Performance test without this.
                     if (thread.isInterrupted()) {
                         logger.info(format("worker intetrrupted %s %s", session.getId(), block.id));
                         return;
