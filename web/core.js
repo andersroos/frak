@@ -13,7 +13,7 @@ export default class Core {
     constructor() {
         this.store = new Store();
         this.backends = new Backends(this.store, this);
-        this.benchmark = new Benchmark();
+        this.benchmark = new Benchmark(this.store);
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
         this.history = new History(data => this.startFromHistory(data));
         this.gui = new Gui(this, this.store, this.screen, this.backends.listBackends());

@@ -16,7 +16,7 @@ body {
     background: #000;
     color: #0f0;
     font-family: LCDM2N, monospace;
-    min-width: 1024px;
+    min-width: 1280px;
 }
 
 canvas {
@@ -34,6 +34,14 @@ canvas {
     margin-left: 8px;
     vertical-align: top;
     max-width: 212px;
+}
+
+.top-lists {
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: top;
+    max-width: 256px;
+    background-color: #222;
 }
 
 table {

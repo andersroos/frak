@@ -308,6 +308,20 @@ export default class Gui {
                 }
             }
         };
+
+        // Top lists.
+        this.store.subscribe("worker_speed_top_list", (before, after) => {
+            const template = document.querySelector("#worker-speed-row");
+            const tbody = document.querySelector("#worker-speed tbody");
+            tbody.innerHTML = null;
+            after.forEach(item => {
+                console.info("top-list", item);
+                const row = template.content.cloneNode(true);
+                row.querySelector(".backend").textContent = item.backend;
+                row.querySelector(".speed").textContent = formatFloat(item.speed, {dec: 4, human: true});
+                tbody.appendChild(row);
+            });
+        });
     }
 
     onEvent() {

@@ -34,6 +34,8 @@ export default class Store {
         this.createProperty("color_cycle", 0);
         this.createProperty("color_scale", 256);
         this.createProperty("color_offset", "OFF");
+        this.createProperty("speed_top_list", [], false);
+        this.createProperty("worker_speed_top_list", [], false);
     }
 
     createProperty(key, defaultValue, persistent=true) {
