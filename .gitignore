@@ -15,6 +15,7 @@ web/*.bc
 
 # make
 Makefile.bak
+local.mk
 
 # java
 java-server/.gradle

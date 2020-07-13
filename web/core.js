@@ -1,11 +1,11 @@
-import {CONFIGURE, START, BLOCK_COMPLETE, FINISHED, BLOCK_STARTED, INTERRUPT} from './op';
 import {X_SIZE, Y_SIZE} from "./dimensions";
 import Gui from "./gui";
 import {CALCULATING} from "./colors";
 import History from "./history";
-import {calculateWeight} from "./util";
 import Store from "./store";
 import {Backends} from "./backends";
+import Benchmark from "./benchmark";
+import {calculateWeight} from "./util";
 
 
 export default class Core {
@@ -13,6 +13,7 @@ export default class Core {
     constructor() {
         this.store = new Store();
         this.backends = new Backends(this.store, this);
+        this.benchmark = new Benchmark();
         this.screen = new Module.Screen(X_SIZE, Y_SIZE);
         this.history = new History(data => this.startFromHistory(data));
         this.gui = new Gui(this, this.store, this.screen, this.backends.listBackends());
@@ -89,7 +90,7 @@ export default class Core {
             x0_start_index: -0.5 * X_SIZE,
             y0_start_index: -0.5 * Y_SIZE,
             max_n,
-            benchmark: "00",
+            not_really_a_benchmark: "00",
             onBeforeStart: () => {
                 this.store.color_scale = 80.63492856264527;
                 this.screen.clear();
@@ -169,10 +170,24 @@ export default class Core {
         this.gui.onFinished(statistics);
     }
 
-    onCompleted({benchmark}) {
+    onCompleted({benchmark, backend, startTime, completeTime, hardware, id, workers, max_n}) {
         const statistics = this.screen.getStatistics();
         if (benchmark) {
-            // TODO this.history.saveBenchmark();
+            const elapsed = completeTime - startTime;
+            const weight = calculateWeight(statistics, max_n);
+            const speed = weight / elapsed;
+            const worker_speed = weight / workers / elapsed;
+            this.benchmark.saveBenchmark({
+                id,
+                benchmark,
+                backend: backend.key,
+                hardware,
+                workers,
+                speed,
+                worker_speed,
+                weight,
+                elapsed,
+            });
         }
         this.gui.onFinished(statistics);
     }

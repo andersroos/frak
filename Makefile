@@ -4,6 +4,12 @@ BASE_DIR := $(realpath $(CURDIR)/$(MAKEFILE_DIR))
 CPP_WASM=docker run --rm -u $(shell id -u):$(shell id -g) -v $(BASE_DIR):/src trzeci/emscripten em++ -O3
 CORELIB_OBJS=web/corelib.bc
 
+AWS_ACCESS_KEY_ID := ""
+AWS_ACCESS_KEY_SECRET := ""
+
+# Override settings.
+-include local.mk
+
 default: build
 	make -j run
 
@@ -25,7 +31,7 @@ web/corelib.wasm: $(CORELIB_OBJS)
 web-build: web/corelib.wasm
 
 web-run:
-	cd web && npm run dev-server
+	cd web && AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_ACCESS_KEY_SECRET=${AWS_ACCESS_KEY_SECRET} npm run dev-server
 
 registry-run:
 	cd registry && nodemon registry.js

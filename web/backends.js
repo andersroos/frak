@@ -55,6 +55,14 @@ class LocalBackend {
             default: throw new Error(`unkwnon op ${params.op}`);
         }
     }
+
+    guessHardware() {
+        const concurrency = guessHardwareConcurrency();
+        if (concurrency === 24) return "ni";
+        if (navigator.userAgent.match(/Android 7/)) return "sg";
+        if (navigator.userAgent.match(/Android 1\d/)) return "px";
+        if (concurrency === 4) return "lo";
+    }
 }
 
 
@@ -143,6 +151,11 @@ class RemoteBackend {
         const y_size = data.getUint32(28, true);
         this.backends.onBlockCompleted({id, x_start, y_start, x_size, y_size, bytes: buffer.slice(32, buffer.length)});
     }
+
+    guessHardware() {
+        if (this.max_workers === 24) return "ni";
+        return "lo";
+    }
 }
 
 const ABORT_TIMEOUT = 5000;
@@ -222,6 +235,7 @@ export class Backends {
         this.currenctCalculation.id = createId();
         this.currenctCalculation.backend = this.selectedBackend;
         this.currenctCalculation.workers = this.store.getWorkerCount();
+        this.currenctCalculation.hardware = this.selectedBackend.guessHardware();
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
         this.currenctCalculation.block_x_size = X_SIZE;

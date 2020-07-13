@@ -1,3 +1,5 @@
+const webpack = require("webpack");
+
 module.exports = {
     entry: {
         main: './main.js',
@@ -12,4 +14,10 @@ module.exports = {
         // hot: false,
         inline: false,
     },
+    plugins: [
+        new webpack.DefinePlugin({
+            "process.env.AWS_ACCESS_KEY_ID": JSON.stringify(process.env.AWS_ACCESS_KEY_ID),
+            "process.env.AWS_ACCESS_KEY_SECRET": JSON.stringify(process.env.AWS_ACCESS_KEY_SECRET),
+        }),
+    ]
 };
