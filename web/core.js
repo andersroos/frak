@@ -2,7 +2,7 @@ import {X_SIZE, Y_SIZE} from "./dimensions";
 import Gui from "./gui";
 import {CALCULATING} from "./colors";
 import History from "./history";
-import Store from "./store";
+import Store, {BACKEND_ONLINE} from "./store";
 import {Backends} from "./backends";
 import Benchmark from "./benchmark";
 import {calculateWeight} from "./util";
@@ -69,15 +69,6 @@ export default class Core {
                 this.screen.clear();
             },
         });
-    }
-
-    whenBackendConnected(callback) {
-        if (this.store.getBackendAlive(this.store.backend)) {
-            callback();
-        }
-        else {
-            setTimeout(() => this.whenBackendConnected(callback), 200);
-        }
     }
 
     startBenchmark00() {

@@ -1,12 +1,14 @@
 import {
-    BACKEND_KEY,
-    STATE_CALCULATING,
-    STATE_ABORTING,
-    STATE_WAITING,
-    STATE_WAITING_ABORTED,
-    STATE_WAITING_OFFLINE,
-    STATE_WAITING_STARTUP,
-    STATE_WAITING_COMPLETED
+    CALCULATION_CALCULATING,
+    CALCULATION_ABORTING,
+    CALCULATION_WAITING,
+    CALCULATION_WAITING_ABORTED,
+    CALCULATION_WAITING_OFFLINE,
+    CALCULATION_WAITING_STARTUP,
+    CALCULATION_WAITING_COMPLETED,
+    BACKEND_ONLINE,
+    BACKEND_CONNECTING,
+    BACKEND_OFFLINE
 } from "./store";
 import {guessBrowser, guessHardwareConcurrency} from "./util";
 import {ABORTED, BLOCK_COMPLETED, BLOCK_STARTED, COMPLETED, START, ABORT, CONFIG} from "./op";
@@ -20,13 +22,13 @@ const createId = () => String(Date.now()).padStart(16, '0');
 class LocalBackend {
 
     constructor(store, backends, key) {
-        this.store = store;
         this.key = key;
         this.backends = backends;
-        this.store.putBackendAlive(this.key, true);
         this.max_workers = guessHardwareConcurrency();
+        this.state = BACKEND_ONLINE;
         this.dispatcher = new Worker('dispatcher.js');
         this.dispatcher.onmessage = e => this.onMessage(e);
+        this.backends.onBackendStateChange(this.key);
     }
 
     reconnect() {
@@ -39,10 +41,6 @@ class LocalBackend {
 
     abort({id}) {
         this.dispatcher.postMessage({op: ABORT, id});
-    }
-
-    alive() {
-        return true;
     }
 
     onMessage(event) {
@@ -69,38 +67,42 @@ class LocalBackend {
 class RemoteBackend {
 
     constructor(store, backends, key, url) {
-        this.store = store;
         this.key = key;
         this.url = url;
         this.backends = backends;
+        this.state = BACKEND_OFFLINE;
         this.connect();
         this.max_workers = 1;
         this.decoder = new TextDecoder();
     }
 
     connect() {
-        if (this.connection && this.connection.readyState !== WebSocket.CONNECTING) {
-            this.connection.close();
+        if (this.state !== BACKEND_OFFLINE) {
+            return;
         }
         console.info("connecting to", this.url);
+        this.state = BACKEND_CONNECTING;
+
+        // onclose will be sent after connection errors, so we ignore onerror.
         this.connection = new WebSocket(this.url);
         this.connection.binaryType = "arraybuffer";
         this.connection.onmessage = this.onMessage.bind(this);
         this.connection.onclose = this.onClose.bind(this);
         this.connection.onopen = this.onOpen.bind(this);
-    }
-
-    alive() {
-        // TODO Need better alive check, maybe after we got config message?
-        return this.store.getBackendAlive(this.key);
+        this.backends.onBackendStateChange(this.key);
     }
 
     reconnect() {
+        if (this.connection) {
+            // Make sure we do not get any close events since we will create a new connection, then close.
+            this.connection.onclose = null;
+            this.connection.close();
+        }
+        this.state = BACKEND_OFFLINE;
         this.connect();
     }
 
     start({id, x_size, y_size, block_x_size, block_y_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}) {
-        console.info("start remote", id, workers);
         this.connection.send(JSON.stringify({op: START, id, x_size, y_size, block_y_size, block_x_size, max_n, x0_start_index, x0_delta, y0_start_index, y0_delta, workers}));
     }
 
@@ -110,7 +112,6 @@ class RemoteBackend {
 
     onOpen(e) {
         console.info(this.key, "open", e);
-        this.store.putBackendAlive(this.key, true);
     }
 
     onMessage(e) {
@@ -133,13 +134,18 @@ class RemoteBackend {
 
     onClose(e) {
         console.info(this.key, "close");
-        this.store.putBackendAlive(this.key, false);
+        this.state = BACKEND_OFFLINE;
+        this.backends.onBackendStateChange(this.key);
     }
 
     onConfig(data) {
+        if (this.state !== BACKEND_CONNECTING) {
+            logger.warning(this.key, "got onConfig when connection state was", this.state, "expected", BACKEND_CONNECTING);
+        }
+        this.state = BACKEND_ONLINE;
         this.max_workers = data.max_workers;
         assert(data.endian === "little", "only little endian backends are supported (rip network byte order)");
-        this.backends.onConfig(this.key);
+        this.backends.onBackendStateChange(this.key);
     }
 
     onBlockCompleted(buffer) {
@@ -165,7 +171,7 @@ export class Backends {
 
     constructor(store, core) {
         this.store = store;
-        this.store.subscribe(BACKEND_KEY, this.onBackendChange.bind(this))
+        this.store.subscribe("backend", this.onBackendChange.bind(this))
 
         this.core = core;
 
@@ -175,11 +181,12 @@ export class Backends {
             new LocalBackend(store, this, browser + "*js"),
         ].map(backend => [backend.key, backend]));
 
-        console.info(STATE_WAITING_STARTUP);
-        this.store.state = STATE_WAITING_STARTUP;
+        this.store.state = CALCULATION_WAITING_STARTUP;
         this.selectedBackend = this.backends[this.store.backend];
         this.requestedCalculation = null;
         this.currenctCalculation = null;
+
+        this.onBackendStateChange(this.store.backend);
 
         setInterval(() => this.reviveBackend(), 1000);
         setInterval(() => this.handleCalculationState(), 200);
@@ -201,28 +208,28 @@ export class Backends {
     }
 
     handleCalculationState() {
-        if (this.store.state.startsWith(STATE_WAITING)) {
+        if (this.store.state.startsWith(CALCULATION_WAITING)) {
             if (this.requestedCalculation) {
-                if (this.selectedBackend.alive()) {
-                    this.store.state = STATE_CALCULATING;
+                if (this.selectedBackend.state === BACKEND_ONLINE) {
+                    this.store.state = CALCULATION_CALCULATING;
                     this.start();
                 }
                 else {
-                    this.store.state = STATE_WAITING_OFFLINE;
+                    this.store.state = CALCULATION_WAITING_OFFLINE;
                     this.requestedCalculation = null;
                 }
             }
         }
-        else if (this.store.state.startsWith(STATE_ABORTING)) {
+        else if (this.store.state.startsWith(CALCULATION_ABORTING)) {
             if (performance.now() - this.currenctCalculation.abortTime > ABORT_TIMEOUT) {
-                this.store.state = STATE_WAITING_ABORTED;
+                this.store.state = CALCULATION_WAITING_ABORTED;
                 this.currenctCalculation.onAborted(this.currenctCalculation);
                 this.currenctCalculation.backend.reconnect();
             }
         }
-        else if (this.store.state.startsWith(STATE_CALCULATING)) {
+        else if (this.store.state.startsWith(CALCULATION_CALCULATING)) {
             if (this.requestedCalculation) {
-                this.store.state = STATE_ABORTING;
+                this.store.state = CALCULATION_ABORTING;
                 this.currenctCalculation.backend.abort(this.currenctCalculation);
             }
         }
@@ -253,6 +260,7 @@ export class Backends {
             throw new Error("y_size must be multiple of block_y_size and x_size must be multiple of block_x_size");
         }
 
+        console.info("starting", this.currenctCalculation.id, this.currenctCalculation.backend.key, this.currenctCalculation.workers);
         this.currenctCalculation.backend.start(this.currenctCalculation);
     }
 
@@ -261,7 +269,7 @@ export class Backends {
     }
 
     reviveBackend() {
-        if (this.selectedBackend && !this.selectedBackend.alive()) {
+        if (this.selectedBackend && this.selectedBackend.state === BACKEND_OFFLINE) {
             this.selectedBackend.connect();
         }
     }
@@ -284,7 +292,7 @@ export class Backends {
         if (!this.currenctCalculation || this.currenctCalculation.id !== id) return;
         this.currenctCalculation.completeTime = performance.now();
         this.currenctCalculation.onCompleted(this.currenctCalculation);
-        this.store.state = STATE_WAITING_COMPLETED;
+        this.store.state = CALCULATION_WAITING_COMPLETED;
         this.handleCalculationState();
     }
 
@@ -296,7 +304,7 @@ export class Backends {
         if (!this.currenctCalculation || this.currenctCalculation.id !== id) return;
         this.currenctCalculation.abortTime = performance.now();
         this.currenctCalculation.onAborted(this.currenctCalculation);
-        this.store.state = STATE_WAITING_ABORTED;
+        this.store.state = CALCULATION_WAITING_ABORTED;
         this.handleCalculationState();
     }
 
@@ -304,13 +312,14 @@ export class Backends {
         if (before !== after) {
             this.selectedBackend = this.backends[after];
             this.store.max_workers = this.selectedBackend.max_workers;
+            this.store.backend_state = this.selectedBackend.state;
         }
     }
 
-    onConfig(backend) {
-        const b = this.backends[backend];
-        if (backend === this.store.backend && this.store.max_workers !== b.max_workers) {
-            this.store.max_workers = b.max_workers;
+    onBackendStateChange(backend) {
+        if (this.selectedBackend && backend === this.selectedBackend.key) {
+            this.store.max_workers = this.selectedBackend.max_workers;
+            this.store.backend_state = this.selectedBackend.state;
         }
     }
 

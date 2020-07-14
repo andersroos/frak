@@ -2,15 +2,15 @@ import {calculateWeight, formatInt} from "./util";
 import {HISTOGRAM_SIZE, X_SIZE, Y_SIZE} from "./dimensions";
 import Colors from "./colors";
 import {WheelSelectInput, WheelValueInput} from "./inputs";
-import {MAX_WORKERS} from "./store";
+import {BACKEND_CONNECTING, BACKEND_OFFLINE, BACKEND_ONLINE, MAX_WORKERS} from "./store";
 import {
-    STATE_CALCULATING,
-    STATE_ABORTING,
-    STATE_WAITING,
-    STATE_WAITING_ABORTED,
-    STATE_WAITING_OFFLINE,
-    STATE_WAITING_STARTUP,
-    STATE_WAITING_COMPLETED
+    CALCULATION_CALCULATING,
+    CALCULATION_ABORTING,
+    CALCULATION_WAITING,
+    CALCULATION_WAITING_ABORTED,
+    CALCULATION_WAITING_OFFLINE,
+    CALCULATION_WAITING_STARTUP,
+    CALCULATION_WAITING_COMPLETED
 } from "./store";
 
 const QBRT_2 = Math.pow(2, 1/3);
@@ -131,19 +131,20 @@ export default class Gui {
         });
 
         // Backend.
-        let backendAliveUnsubscribe = null;
-        const backendSetAlive = (before, after) => document.getElementById("backend").style.color = after ? "#0f0" : "#f00";
+        const backendColor = {
+            [BACKEND_OFFLINE]: "#f00",
+            [BACKEND_CONNECTING]: "#f80",
+            [BACKEND_ONLINE]: "#0f0",
+        };
+        const onBackendChange = () => document.getElementById("backend").style.color = backendColor[this.store.backend_state];
         this.backendInput = new WheelSelectInput({
             id: "backend",
             store: this.store,
             options: backendList.map(backend => ({key: backend, value: backend})),
             formatKey: v => v.padStart(13, " "),
-            onChange: () => {
-                if (backendAliveUnsubscribe) backendAliveUnsubscribe();
-                backendAliveUnsubscribe = this.store.subscribe(this.store.getBackendAliveKey(this.store.backend), backendSetAlive);
-                backendSetAlive(null, this.store.getBackendAlive(this.store.backend));
-            },
+            onChange: onBackendChange,
         });
+        this.store.subscribe("backend_state", onBackendChange);
 
         // Worker count.
         this.workerCountInput = new WheelSelectInput({
@@ -243,22 +244,22 @@ export default class Gui {
 
         // State
         const stateColors = {
-            [STATE_CALCULATING]: "#0f0",
-            [STATE_ABORTING]: "#f80",
-            [STATE_WAITING]: "#0f0",
-            [STATE_WAITING_ABORTED]: "#f80",
-            [STATE_WAITING_OFFLINE]: "#f00",
-            [STATE_WAITING_STARTUP]: "#0f0",
-            [STATE_WAITING_COMPLETED]: "#0f0"
+            [CALCULATION_CALCULATING]: "#0f0",
+            [CALCULATION_ABORTING]: "#f80",
+            [CALCULATION_WAITING]: "#0f0",
+            [CALCULATION_WAITING_ABORTED]: "#f80",
+            [CALCULATION_WAITING_OFFLINE]: "#f00",
+            [CALCULATION_WAITING_STARTUP]: "#0f0",
+            [CALCULATION_WAITING_COMPLETED]: "#0f0"
         };
         const stateTexts = {
-            [STATE_CALCULATING]: "calculating",
-            [STATE_ABORTING]: "aborting",
-            [STATE_WAITING]: "waiting",
-            [STATE_WAITING_ABORTED]: "calculation aborted",
-            [STATE_WAITING_OFFLINE]: "backend offline",
-            [STATE_WAITING_STARTUP]: "starting up",
-            [STATE_WAITING_COMPLETED]: "calculation completed"
+            [CALCULATION_CALCULATING]: "calculating",
+            [CALCULATION_ABORTING]: "aborting",
+            [CALCULATION_WAITING]: "waiting",
+            [CALCULATION_WAITING_ABORTED]: "calculation aborted",
+            [CALCULATION_WAITING_OFFLINE]: "backend offline",
+            [CALCULATION_WAITING_STARTUP]: "starting up",
+            [CALCULATION_WAITING_COMPLETED]: "calculation completed"
         }
         this.store.subscribe("state", (before, after) => {
             const element = document.getElementById("state");
@@ -315,7 +316,6 @@ export default class Gui {
             const tbody = document.querySelector("#worker-speed tbody");
             tbody.innerHTML = null;
             after.forEach(item => {
-                console.info("top-list", item);
                 const row = template.content.cloneNode(true);
                 row.querySelector(".backend").textContent = item.backend;
                 row.querySelector(".speed").textContent = formatFloat(item.speed, {dec: 4, human: true});

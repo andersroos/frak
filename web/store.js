@@ -1,14 +1,19 @@
 import {X_SIZE, Y_SIZE} from "./dimensions";
 
-export const STATE_WAITING = "waiting";
-export const STATE_WAITING_STARTUP = "waiting-startup";
-export const STATE_WAITING_OFFLINE = "waiting-offline";
-export const STATE_WAITING_COMPLETED = "waiting-completed";
-export const STATE_WAITING_ABORTED = "waiting-aborted";
-export const STATE_ABORTING = "aborting";
-export const STATE_CALCULATING = "calculating";
 
-export const BACKEND_KEY = "backend";
+// Calculation states.
+export const CALCULATION_WAITING = "waiting";
+export const CALCULATION_WAITING_STARTUP = "waiting-startup";
+export const CALCULATION_WAITING_OFFLINE = "waiting-offline";
+export const CALCULATION_WAITING_COMPLETED = "waiting-completed";
+export const CALCULATION_WAITING_ABORTED = "waiting-aborted";
+export const CALCULATION_ABORTING = "aborting";
+export const CALCULATION_CALCULATING = "calculating";
+
+// Backend states.
+export const BACKEND_ONLINE = "backend-online";
+export const BACKEND_CONNECTING = "backend-connecting";
+export const BACKEND_OFFLINE = "backend-offline";
 
 export const MAX_WORKERS = 8192;
 
@@ -18,8 +23,9 @@ export default class Store {
         this.subscriberId = 0;
         this.subscribers = {};
         this.data = {};
-        this.createProperty(BACKEND_KEY, "java");
-        this.createProperty("state", STATE_WAITING_STARTUP, false);
+        this.createProperty("backend", "java");
+        this.createProperty("backend_state", BACKEND_OFFLINE, false);
+        this.createProperty("state", CALCULATION_WAITING_STARTUP, false);
         this.createProperty("workers", "max");
         this.createProperty("workers_value", MAX_WORKERS, false);
         this.createProperty("max_workers", 1, false);
@@ -95,16 +101,8 @@ export default class Store {
         Object.values(this.subscribers[key] || {}).forEach(onChange => onChange(before, value));
     }
 
-    getBackendAliveKey(backend) {
-        return "backendAlive-" + backend;
-    }
-
-    getBackendAlive(backend) {
-        return this.getVolatile("backendAlive-" + backend, false);
-    }
-
-    putBackendAlive(backend, value) {
-        this.putVolatile("backendAlive-" + backend, value);
+    isBackendAlive() {
+        return BACKEND_ONLINE === this.backend_state;
     }
 
     getWorkerCount() {

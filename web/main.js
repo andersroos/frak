@@ -22,5 +22,18 @@ window.init = () => {
 
     const core = new Core();
 
-    core.whenBackendConnected(() => core.startBenchmark00());
+    const start = () => core.startBenchmark00();
+
+    if (core.store.isBackendAlive()) {
+        start();
+    }
+    else {
+        const unsubscribe = core.store.subscribe("backend_state", () => {
+            if (core.store.isBackendAlive()) {
+                unsubscribe();
+                start();
+            }
+        });
+        core.store.subscribe("backend", () => unsubscribe());
+    }
 };
