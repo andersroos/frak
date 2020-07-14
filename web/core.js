@@ -159,6 +159,7 @@ export default class Core {
     onAborted() {
         const statistics = this.screen.getStatistics();
         this.gui.onFinished(statistics);
+        statistics.histogram.delete();
     }
 
     onCompleted({benchmark, backend, startTime, completeTime, hardware, id, workers, max_n}) {

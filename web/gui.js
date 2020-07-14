@@ -274,6 +274,7 @@ export default class Gui {
                 const statistics = this.screen.getStatistics();
                 this.colors.setScreenColors(statistics.minDepth);
                 this.paint(statistics);
+                statistics.histogram.delete();
             }
             requestAnimationFrame(paint);
         };

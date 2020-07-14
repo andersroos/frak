@@ -23,3 +23,12 @@ java-server/build
 java-server/gradle
 java-server/gradlew
 java-server/gradlew.bat
+
+# c++
+cpp-server/cmake-build-debug
+cpp-server/cmake-build-release
+cpp-server/Makefile
+cpp-server/CMakeFiles
+cpp-server/CMakeCache.txt
+cpp-server/cmake_install.cmake
+cpp-server/cpp-server

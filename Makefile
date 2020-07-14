@@ -42,7 +42,14 @@ java-server-build:
 java-server-run:
 	cd java-server && ./gradlew run
 
-build: c64-build web-build
+cpp-server-build:
+	mkdir -p cpp-server/cmake-build-release
+	cd cpp-server/cmake-build-release && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j 24
+
+cpp-server-run:
+	./cpp-server/cmake-build-release/cpp-server
+
+build: c64-build web-build java-server-build cpp-server-build
 
 run: web-run registry-run java-server-run
 
