@@ -41,29 +41,27 @@ canvas {
     margin-left: 8px;
     vertical-align: top;
     max-width: 256px;
-    background-color: #222;
+}
+
+p.gap {
+    margin-bottom: 4px;
+}
+
+p.big-gap {
+    margin-bottom: 10px;
 }
 
 table {
     border-spacing: 12px 4px;
+    margin-left: -12px;
 }
 
 th {
     text-align: left;
 }
 
-tbody tr:hover {
-    font-weight: bold;
-    cursor: pointer;
-}
-
 td.num {
     text-align: right;
-}
-
-td.remove {
-    color: red;
-    font-weight: bold;
 }
 
 button {

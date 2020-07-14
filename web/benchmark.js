@@ -20,8 +20,13 @@ export default class Benchmark {
                 const item = AWS.DynamoDB.Converter.unmarshall(d);
                 this.items[item.id] = item;
             })
-            this.calculateTopLists();
+            this.calculateTopList();
         });
+
+        const onStoreChange = (before, after) => {if (before !== after) this.calculateTopList()}
+        this.store.subscribe("top_list_type", onStoreChange);
+        this.store.subscribe("workers_filter", onStoreChange);
+        this.store.subscribe("benchmark_filter", onStoreChange);
 
         this.items = {}
     }
@@ -31,43 +36,70 @@ export default class Benchmark {
         this.items[item.id] = item;
         const params = {TableName: "frak-benchmark", Item: AWS.DynamoDB.Converter.marshall(item)};
         this.db.putItem(params, err => { if (err) console.error("failed to put item to aws", err) });
-        this.calculateTopLists();
+        this.calculateTopList();
     }
 
-    calculateTopLists() {
-        // TODO Filters.
-        const benchmark = null;
-        const workers = null;
+    calculateTopList() {
+        const type = this.store.top_list_type;
+        const benchmark = this.store.benchmark_filter;
+        const workers = Number.parseInt(this.store.workers_filter) || null;
 
-        const backends = {};
+        const groups = {};
+
+        // Chose code based on type.
+        const groupKeyCreator = {
+            "speed":  item => item.backend + "¤" + item.workers,
+            "worker*speed": item => item.backend,
+        }[type];
+        const itemsAggregate = {
+            "speed": items => {
+                const speed = items.reduce((a, i) => a + i.speed, 0) / items.length;
+                return {
+                    backend: items[0].backend,
+                    workers: items[0].workers,
+                    count : items.length,
+                    speed,
+                }
+            },
+            "worker*speed": items => {
+                const speed = items.reduce((a, i) => a + i.worker_speed, 0) / items.length;
+                return {
+                    backend: items[0].backend,
+                    count : items.length,
+                    speed,
+                }
+            },
+        }[type];
+        const itemCompare = (a, b) => b.speed - a.speed;
+        const normalizeTopList = items => {
+            let maxSpeed = items.reduce((a, i) => Math.max(a, i.speed), 0);
+            const factor = 100 / maxSpeed;
+            items.forEach(i => i.speed = i.speed * factor);
+        };
+
+        // Collect for each item.
         Object.values(this.items).forEach(item => {
+
             // Apply filters.
-            if (benchmark && item.benchmark !== benchmark) return;
+            if (benchmark !== "off" && item.benchmark !== benchmark) return;
             if (workers && item.workers !== workers) return;
 
-            // Group by backend for toplist calculations.
-            let speeds = backends[item.backend];
-            if (!speeds) {
-                speeds = backends[item.backend] = {worker_speed: [], speed: []};
+            // Group by key for top list calculations.
+            const key = groupKeyCreator(item);
+            let group = groups[key];
+            if (group) {
+                group.push(item);
             }
-            // TODO Probably want to separate runs with different number of workers when comparing speeds or average
-            // will be dependent on number of runs with different worker counts.
-            speeds.worker_speed.push(item.worker_speed);
-            speeds.speed.push(item.speed);
-        });
-        Object.values(backends).forEach(speeds => {
-            const length = speeds.worker_speed.length;
-            speeds.worker_speed = speeds.worker_speed.reduce((a, b) => a + b) / length;
-            speeds.speed = speeds.speed.reduce((a, b) => a + b) / length;
+            else {
+                groups[key] = [item];
+            }
         });
 
-        const speed_top_list = Object.entries(backends).map(([backend, speeds]) => ({backend, speed: speeds.speed}));
-        speed_top_list.sort((a, b) => b.speed - a.speed);
-        this.store.speed_top_list = speed_top_list;
-
-        const worker_speed_top_list = Object.entries(backends).map(([backend, speeds]) => ({backend, speed: speeds.worker_speed}));
-        worker_speed_top_list.sort((a, b) => b.speed - a.speed);
-        this.store.worker_speed_top_list = worker_speed_top_list;
+        // Aggregate for each group.
+        const top_list = Object.values(groups).map(itemsAggregate);
+        top_list.sort(itemCompare);
+        normalizeTopList(top_list);
+        this.store.top_list = top_list;
     }
 
 }

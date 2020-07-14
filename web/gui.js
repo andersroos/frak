@@ -311,14 +311,40 @@ export default class Gui {
         };
 
         // Top lists.
-        this.store.subscribe("worker_speed_top_list", (before, after) => {
-            const template = document.querySelector("#worker-speed-row");
-            const tbody = document.querySelector("#worker-speed tbody");
+        this.topListInput = new WheelSelectInput({
+            store: this.store,
+            id: "top_list_type",
+            formatKey: k => k.padStart(16, " "),
+            onChange: () => this.onEvent(),
+            options: ["speed", "worker*speed"].map(v => ({value: v, key: v})),
+        });
+        this.workersFilerInput = new WheelSelectInput({
+            store: this.store,
+            id: "workers_filter",
+            formatKey: k => k.padStart(3, " "),
+            onChange: () => this.onEvent(),
+            options: ["off", "24", "8", "4", "1"].map(v => ({value: v, key: v})),
+        });
+        this.benchmarkFilerInput = new WheelSelectInput({
+            store: this.store,
+            id: "benchmark_filter",
+            formatKey: k => k.padStart(3, " "),
+            onChange: () => this.onEvent(),
+            options: ["off", "40", "12", "01"].map(v => ({value: v, key: v})),
+        });
+        this.store.subscribe("top_list", (before, after) => {
+            const type = this.store.top_list_type;
+            const template = document.querySelector(`#${type.replace("*", "-")}-row`);
+            const tbody = document.querySelector("#top-list tbody");
             tbody.innerHTML = null;
             after.forEach(item => {
                 const row = template.content.cloneNode(true);
                 row.querySelector(".backend").textContent = item.backend;
-                row.querySelector(".speed").textContent = formatFloat(item.speed, {dec: 4, human: true});
+                row.querySelector(".speed").textContent = formatFloat(item.speed, {dec: 2});
+                if (type === "speed") {
+                    row.querySelector(".workers").textContent = item.workers;
+                }
+                row.querySelector(".count").textContent = formatInt(item.count, {padTo: 4, space: 3});
                 tbody.appendChild(row);
             });
         });
