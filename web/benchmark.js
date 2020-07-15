@@ -48,26 +48,19 @@ export default class Benchmark {
 
         // Chose code based on type.
         const groupKeyCreator = {
-            "speed":  item => item.backend + "¤" + item.workers,
-            "worker*speed": item => item.backend,
+            "speed":  item => `${item.backend}#${item.hardware}#${item.workers}`,
+            "worker*speed": item => `${item.backend}#${item.hardware}`,
         }[type];
         const itemsAggregate = {
             "speed": items => {
                 const speed = items.reduce((a, i) => a + i.speed, 0) / items.length;
-                return {
-                    backend: items[0].backend,
-                    workers: items[0].workers,
-                    count : items.length,
-                    speed,
-                }
+                const {backend, workers, hardware} = items[0];
+                return {backend, workers, hardware, count: items.length, speed};
             },
             "worker*speed": items => {
                 const speed = items.reduce((a, i) => a + i.worker_speed, 0) / items.length;
-                return {
-                    backend: items[0].backend,
-                    count : items.length,
-                    speed,
-                }
+                const {backend, hardware} = items[0];
+                return {backend, hardware, count: items.length, speed};
             },
         }[type];
         const itemCompare = (a, b) => b.speed - a.speed;

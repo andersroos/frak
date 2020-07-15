@@ -341,6 +341,7 @@ export default class Gui {
             after.forEach(item => {
                 const row = template.content.cloneNode(true);
                 row.querySelector(".backend").textContent = item.backend;
+                row.querySelector(".hardware").textContent = item.hardware;
                 row.querySelector(".speed").textContent = formatFloat(item.speed, {dec: 2});
                 if (type === "speed") {
                     row.querySelector(".workers").textContent = item.workers;

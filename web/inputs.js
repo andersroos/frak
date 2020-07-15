@@ -9,7 +9,8 @@ export class WheelSelectInput {
         this.formatKey = formatKey;
 
         const element = document.getElementById(this.id);
-        element.onwheel = this.onWheel.bind(this);
+        element.onwheel = e => { if (e.deltaY > 0) this.onUp(false); else this.onDown(false); };
+        element.onclick = () => this.onDown(true);
         this.element = element.getElementsByClassName("value")[0];
 
         this.store.subscribe(this.id, (before, after) => {
@@ -19,18 +20,30 @@ export class WheelSelectInput {
         });
         this.onKeyChanged(this.store[this.id]);
     }
-
-    onWheel(event) {
+    
+    onUp(wrap) {
         let selected;
-        if (event.deltaY > 0) {
+        if (wrap) {
+            selected = (this.selected - 1 + this.options.length) % this.options.length;
+        }
+        else {
             selected = Math.max(0, this.selected - 1);
+        }
+        console.info(selected);
+        this.store[this.id] = this.options[selected].key;
+    }
+
+    onDown(wrap) {
+        let selected;
+        if (wrap) {
+            selected = (this.selected + 1 + this.options.length) % this.options.length;
         }
         else {
             selected = Math.min(this.selected + 1, this.options.length - 1);
         }
         this.store[this.id] = this.options[selected].key;
     }
-
+    
     format() {
         const option = this.options[this.selected];
         this.element.textContent = this.formatKey ? this.formatKey(option.key) : option.key;
