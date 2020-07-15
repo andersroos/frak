@@ -177,8 +177,9 @@ export class Backends {
 
         const browser = guessBrowser();
         this.backends = Object.fromEntries([
-            new RemoteBackend(store, this, "java", "ws://frak.ygram.se:44001/"),
             new LocalBackend(store, this, browser + "*js"),
+            new RemoteBackend(store, this, "java", "ws://frak.ygram.se:44001/"),
+            new RemoteBackend(store, this, "cpp", "ws://frak.ygram.se:44002/"),
         ].map(backend => [backend.key, backend]));
 
         this.store.state = CALCULATION_WAITING_STARTUP;

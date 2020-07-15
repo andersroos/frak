@@ -1,6 +1,7 @@
 #pragma once
 
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 #include <stdexcept>
 #include <sstream>
 

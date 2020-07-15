@@ -7,7 +7,9 @@ set(CMAKE_CXX_FLAGS_DEBUG  "-g")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-file(GLOB SOURCES src/*.cpp src/rig/log.cpp)
+file(GLOB SOURCES src/*.cpp src/rig/*.cpp)
+
+link_libraries(crypto)
 
 add_executable(cpp-server ${SOURCES})
 

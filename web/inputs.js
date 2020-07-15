@@ -29,7 +29,6 @@ export class WheelSelectInput {
         else {
             selected = Math.max(0, this.selected - 1);
         }
-        console.info(selected);
         this.store[this.id] = this.options[selected].key;
     }
 

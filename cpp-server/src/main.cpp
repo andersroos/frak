@@ -1,6 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
-
 #include "web_socket_server.hpp"
 
 int main() {
@@ -10,5 +7,3 @@ int main() {
       server.accept();
    }
 }
-
-#pragma clang diagnostic pop
