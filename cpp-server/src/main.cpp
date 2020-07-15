@@ -1,8 +1,14 @@
-#include <iostream>
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
+
+#include "web_socket_server.hpp"
 
 int main() {
-   std::cerr << "hello" << std::endl;
+   WebSocketServer server(44002);
 
-   return 0;
+   while (true) {
+      server.accept();
+   }
 }
 
+#pragma clang diagnostic pop

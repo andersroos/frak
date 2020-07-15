@@ -32,3 +32,4 @@ cpp-server/CMakeFiles
 cpp-server/CMakeCache.txt
 cpp-server/cmake_install.cmake
 cpp-server/cpp-server
+*.gch
