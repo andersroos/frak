@@ -7,6 +7,7 @@
 #include <openssl/sha.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include <b64/encode.h>
 #include "web_socket_session.hpp"
 #include "rig/exception.hpp"
 #include "rig/log.hpp"
@@ -18,28 +19,30 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    // Try to synchronously perform a websocket handshake within reasonable time, will accept all paths, will not try
    // to check anything, just establish the connection trusting the client.
 
-   struct timeval timeout{};
-   timeout.tv_sec = 2;
-   timeout.tv_usec = 0;
-   if (setsockopt(_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))) {
-      THROW_E(rig::OsError, "failed to set receive timeout on socket");
-   }
-   if (setsockopt(_socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout))) {
-      THROW_E(rig::OsError, "failed to set send timeout on socket");
+   {
+      struct timeval timeout{};
+      timeout.tv_sec = 2;
+      timeout.tv_usec = 0;
+      if (setsockopt(_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))) {
+         THROW_E(rig::OsError, "failed to set receive timeout on socket");
+      }
+      if (setsockopt(_socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout))) {
+         THROW_E(rig::OsError, "failed to set send timeout on socket");
+      }
    }
 
    char buf[2048];
 
    // Read request.
-   stringstream data;
+   stringstream request;
    while (true) {
       auto received = recv(_socket, buf, sizeof(buf), 0);
       if (received == -1) {
          log_error_and_close("receive timeout in handshake, closing"); return;
       }
-      data.write(buf, received);
-      data.seekg(-4, stringstream::end);
-      data.read(buf, 4);
+      request.write(buf, received);
+      request.seekg(-4, stringstream::end);
+      request.read(buf, 4);
       if (strncmp("\r\n\r\n", buf, 4) == 0) {
          // We have end of http request, read is complete.
          break;
@@ -47,15 +50,13 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    }
 
    // Parse request.
-
-   data.seekg(0);
-   if (not data.good()) {
+   request.seekg(0);
+   if (not request.good()) {
       log_error_and_close("got empty request, closing"); return;
    }
-
    unordered_map<string, string> headers;
    string line;
-   while (getline(data, line, '\n').good()) {
+   while (getline(request, line, '\n').good()) {
       auto res = line.find(':');
       if (res == string::npos) {
          // This is not a header line.
@@ -77,79 +78,51 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    }
 
    // Calculate accept key.
-   // string secret(headers["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-   string secret("dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+   string secret(headers["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
    unsigned char digest[SHA_DIGEST_LENGTH];
    SHA1((const unsigned char*) secret.c_str(), secret.length(), digest);
-   string accept_key((const char*) digest, sizeof(digest));
 
    // Base64 encode it.
-   BIO *bio, *b64;
-   b64 = BIO_new(BIO_f_base64());
-   bio = BIO_new_fp(stdout, BIO_NOCLOSE);
-   BIO_push(b64, bio);
-   BIO_write(b64, digest, sizeof(digest));
-   BIO_flush(b64);
-   BIO_free_all(b64);
+   base64::encoder encoder;
+   istringstream is(string((const char*) digest, sizeof(digest)));
+   ostringstream accept_key_os;
+   encoder.encode(is, accept_key_os);
+   string accept_key = accept_key_os.str();
 
-   cerr << accept_key << endl;
-//   while (!= -) {
-//   if (not request.good()) return error_response("missing version");
-//   if (version != "HTTP/1.1") return error_response("only http/1.1 is supported");
-//
-//
-//
-//   data.seekg(0);
-//   if (not data.good()) {
-//      LOG_ERROR("got empty request");
-//      close(_socket);
-//      return;
-//   }
-//
-//
-//   auto start = 0U;
-//   auto end = s.find(delim);
-//   while (end != std::string::npos) {
-//      std::cout << s.substr(start, end - start) << std::endl;
-//      start = end + delim.length();
-//      end = s.find(delim, start);
-//   }
-//
-//   std::string method;
-//   std::string url;
-//   std::string version;
-//
-//   data.seekg(0);
-//   if (not data.good()) {
-//      log_error_and_close("got empty request"); return;
-//   }
-//
-//   getline(data, method, ' ');
-//   if (not request.good()) return error_response("missing method");
-//   if (method != "GET") return error_response("only get is supported");
-//
-//   std::getline(request, url, ' ');
-//   if (not request.good()) return error_response("missing url");
-//
-//   std::getline(request, version, '\r');
-//   if (not request.good()) return error_response("missing version");
-//   if (version != "HTTP/1.1") return error_response("only http/1.1 is supported");
-//
-//   std::string cb;
-//
-//   auto index = url.find("callback=");
-//   if (index != std::string::npos and index > 0 and (url[index - 1] == '?' or url[index - 1] == '&')) {
-//      auto end = url.find('&', index + 9);
-//      if (end == std::string::npos) {
-//         cb = url.substr(index + 9);
-//      }
-//      else {
-//         cb = url.substr(index + 9, end - index - 9);
-//      }
-//   }
+   // Send handshake response.
+   stringstream response;
+   response << "HTTP/1.1 101 Switching Protocols\r\n";
+   response << "Upgrade: websocket\r\n";
+   response << "Connection: Upgrade\r\n";
+   response << "Sec-WebSocket-Accept: " << accept_key << "\r\n";
+   response << "\r\n";
+   string response_buf = response.str();
+
+   while (not response_buf.empty()) {
+      auto sent = send(_socket, response_buf.c_str(), response_buf.size(), 0);
+      if (sent == -1) {
+         log_error_and_close("send timeout, closing"); return;
+      }
+      response_buf.erase(0, sent);
+   }
+   LOG_INFO("handshake completed");
+
+   // Change back to a more normal socket timeout.
+   {
+      struct timeval timeout{};
+      timeout.tv_sec = 120;
+      timeout.tv_usec = 0;
+      if (setsockopt(_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))) {
+         THROW_E(rig::OsError, "failed to set receive timeout on socket");
+      }
+      if (setsockopt(_socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout))) {
+         THROW_E(rig::OsError, "failed to set send timeout on socket");
+      }
+   }
 }
 
-void WebSocketSession::log_error_and_close(std::string message) {
+
+void WebSocketSession::log_error_and_close(const string &message) const {
    LOG_ERROR(message.c_str());
    close(_socket);
 }

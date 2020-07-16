@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 file(GLOB SOURCES src/*.cpp src/rig/*.cpp)
 
-link_libraries(crypto)
+link_libraries(crypto b64)
 
 add_executable(cpp-server ${SOURCES})
 
