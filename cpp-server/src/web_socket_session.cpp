@@ -5,8 +5,6 @@
 #include <chrono>
 #include <algorithm>
 #include <openssl/sha.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
 #include <b64/encode.h>
 #include "web_socket_session.hpp"
 #include "rig/exception.hpp"
@@ -37,9 +35,7 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    stringstream request;
    while (true) {
       auto received = recv(_socket, buf, sizeof(buf), 0);
-      if (received == -1) {
-         log_error_and_close("receive timeout in handshake, closing"); return;
-      }
+      if (received == -1) THROW(rig::OsError, "receive timeout in handshake");
       request.write(buf, received);
       request.seekg(-4, stringstream::end);
       request.read(buf, 4);
@@ -51,9 +47,7 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
 
    // Parse request.
    request.seekg(0);
-   if (not request.good()) {
-      log_error_and_close("got empty request, closing"); return;
-   }
+   if (not request.good()) THROW(rig::OsError, "got empty handshake request");
    unordered_map<string, string> headers;
    string line;
    while (getline(request, line, '\n').good()) {
@@ -63,31 +57,26 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
          continue;
       }
       string key(line.substr(0, res));
-      string value(line.substr(res + 1, line.size() - 1));
-      value.erase(value.begin(), find_if(value.begin(), value.end(), [](int c){return not isspace(c);}));
-      value.erase(find_if(value.rbegin(), value.rend(), [](int c){return not isspace(c);}).base(), value.end());
+      string value(rig::trim(line.substr(res + 1, line.size() - 1)));
       headers[key] = value;
    }
 
    // Check connection headers.
-   if (headers["Connection"] != "Upgrade") {
-      log_error_and_close("expeceted connection upgrade request, closing"); return;
-   }
-   if (headers["Upgrade"] != "websocket") {
-      log_error_and_close("expected upgrading to websocket, closing"); return;
-   }
+   if (headers["Connection"] != "Upgrade") THROW(rig::OsError, "expected connection upgrade request, closing");
+   if (headers["Upgrade"] != "websocket") THROW(rig::OsError, "expected upgrading to websocket, closing");
 
    // Calculate accept key.
    string secret(headers["Sec-WebSocket-Key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
    unsigned char digest[SHA_DIGEST_LENGTH];
-   SHA1((const unsigned char*) secret.c_str(), secret.length(), digest);
+   SHA1((const unsigned char *) secret.c_str(), secret.length(), digest);
 
    // Base64 encode it.
    base64::encoder encoder;
-   istringstream is(string((const char*) digest, sizeof(digest)));
+   istringstream is(string((const char *) digest,
+   sizeof(digest)));
    ostringstream accept_key_os;
    encoder.encode(is, accept_key_os);
-   string accept_key = accept_key_os.str();
+   string accept_key = rig::trim(accept_key_os.str()); // Fore some reason a newline is appended to the digest.
 
    // Send handshake response.
    stringstream response;
@@ -100,9 +89,7 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
 
    while (not response_buf.empty()) {
       auto sent = send(_socket, response_buf.c_str(), response_buf.size(), 0);
-      if (sent == -1) {
-         log_error_and_close("send timeout, closing"); return;
-      }
+      if (sent == -1) THROW(rig::OsError, "send timeout in handshake");
       response_buf.erase(0, sent);
    }
    LOG_INFO("handshake completed");
@@ -121,8 +108,85 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    }
 }
 
+void WebSocketSession::receive() {
+   uint8_t buf[4096];
+   basic_stringstream<uint8_t> data(_incoming_data);
+   uint8_t data_length = _incoming_data.size();
 
-void WebSocketSession::log_error_and_close(const string &message) const {
-   LOG_ERROR(message.c_str());
-   close(_socket);
+   while (true) {
+      // Get data into buffer until we have a full message.
+
+      auto received = recv(_socket, buf, sizeof(buf), 0);
+      if (received == -1) {
+         THROW_E(rig::OsError, "receive timeout");
+      }
+      data.write(buf, received);
+      data_length += received;
+
+      // Try to parse header and decide what to do.
+
+      uint8_t required_header_length = 2;
+      if (data_length < required_header_length) continue; // We need at least two bytes to start.
+
+      data.seekg(0);
+      uint8_t byte;
+      byte = data.get();
+      bool fin = byte & 0x80u;
+      uint8_t opcode = byte & 0x0fu;
+      byte = data.get();
+      bool mask = byte & 0x80u;
+
+      uint64_t payload_length = byte & 0x7fu;
+
+      uint8_t payload_length_length = 0;
+      if (payload_length == 126) {
+         payload_length_length = 2;
+      }
+      else if (payload_length == 127) {
+         payload_length_length = 8;
+      }
+      required_header_length += payload_length_length;
+      if (data_length < required_header_length) continue;
+
+      if (payload_length_length) {
+         payload_length = 0;
+         for (uint8_t i = 0; i < payload_length_length; ++i) {
+            payload_length <<= 8u;
+            payload_length |= data.get();
+         }
+      }
+
+      if (not mask) THROW(rig::OsError, "expected mask to be set by server");
+
+      required_header_length += 4;
+      if (data_length < required_header_length) continue;
+
+      uint32_t masking_key = 0;
+      for (uint8_t i = 0; i < 4; ++i) {
+         masking_key |= data.get();
+         masking_key <<= 8u;
+      }
+
+      LOG_INFO("got header, fin %d, opcode 0x%02x, payload_length %d, mask_key 0x%08x", fin, opcode, payload_length, masking_key);
+
+      // In practice we will most likely get the whole message at once, so make it simple and wait for the whole message
+      // before parsing.
+
+      if (data_length < required_header_length + payload_length) continue;
+
+   }
+
+   // Parse header.
+
+
+   // Read until we have paylaod.
+
+}
+
+void WebSocketSession::close() {
+   if (_socket != -1) {
+      LOG_INFO("closing connection");
+      ::close(_socket);
+      _socket = -1;
+   }
 }

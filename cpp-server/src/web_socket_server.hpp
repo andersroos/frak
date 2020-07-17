@@ -9,7 +9,7 @@ struct WebSocketServer {
    explicit WebSocketServer(int port);
 
    // Block until someone connects and return the session.
-   WebSocketSession accept() const;
+   std::unique_ptr<WebSocketSession> accept() const;
 
 private:
    int _socket;

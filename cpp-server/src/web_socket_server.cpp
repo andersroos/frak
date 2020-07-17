@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <memory>
 #include "web_socket_server.hpp"
 #include "rig/log.hpp"
 #include "rig/exception.hpp"
@@ -33,7 +34,7 @@ WebSocketServer::WebSocketServer(int port)
 }
 
 
-WebSocketSession WebSocketServer::accept() const
+unique_ptr<WebSocketSession> WebSocketServer::accept() const
 {
    int server_socket = ::accept(_socket, nullptr, nullptr);
    if (server_socket == -1) {
@@ -42,6 +43,5 @@ WebSocketSession WebSocketServer::accept() const
 
    LOG_INFO("accepted tcp connection");
 
-   return WebSocketSession(server_socket);
+   return std::make_unique<WebSocketSession>(server_socket);
 }
-

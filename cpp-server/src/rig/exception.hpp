@@ -8,51 +8,46 @@
 #include "string.hpp"
 
 #define THROW( EXCEPTION, ... ) \
-   throw EXCEPTION().message(rig::format(__VA_ARGS__)).file(__FILE__).line(__LINE__)
+   throw rig::make_exception<EXCEPTION>(rig::format(#__VA_ARGS__), __FILE__, __LINE__)
 
 #define THROW_E( EXCEPTION, ... ) \
-   throw EXCEPTION().message(rig::format(__VA_ARGS__)).file(__FILE__).line(__LINE__).err(errno)
+   throw rig::make_exception<EXCEPTION>(rig::format(#__VA_ARGS__), __FILE__, __LINE__, errno)
 
+// TODO rig is not the best name, change it to something.
 namespace rig {
 
    using namespace std;
 
-   // Base exception that can be used as a builder to make it easier to make subclasses.
+   template <typename T> T make_exception(string message, string file, int line, int errno_=0)
+   {
+      T exception;
+      exception.message = message;
+      exception.file = file;
+      exception.line = line;
+      exception.errno_ = errno_;
+      return exception;
+   }
+
    struct BaseException : public virtual exception
    {
-      virtual BaseException message(string message) {
-         _message = message;
-         return *this;
-      }
-
-      virtual BaseException file(string file) {
-         _file = file;
-         return *this;
-      }
-
-      virtual BaseException line(int line) {
-         _line = line;
-         return *this;
-      }
-
-      virtual BaseException err(int errno_) {
-         _errno_ = errno_;
-         return *this;
-      }
+      string message;
+      string file;
+      int line;
+      int errno_;
 
       virtual const char* what() const throw() {
          try {
             std::stringstream ss;
 
-            ss << _message;
+            ss << message;
 
-            if (!_file.empty() or _line or _errno_) {
+            if (not file.empty() or line or errno_) {
                ss << " (";
-               if (_errno_) {
-                  ss << "errno " << _errno_ << " '" << strerror(_errno_) << "' ";
+               if (errno_) {
+                  ss << "errno " << errno_ << " '" << strerror(errno_) << "' ";
                }
-               if (!_file.empty() and _line) {
-                  ss << "at " << _file << ":" << _line;
+               if (not file.empty() and line) {
+                  ss << "at " << file << ":" << line;
                }
                ss << ")";
             }
@@ -67,10 +62,6 @@ namespace rig {
 
    private:
       mutable string _what;
-      string _message;
-      string _file;
-      int _line;
-      int _errno_;
    };
 
    struct OsError : public BaseException {};
