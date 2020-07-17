@@ -9,8 +9,22 @@
 #include "web_socket_session.hpp"
 #include "rig/exception.hpp"
 #include "rig/log.hpp"
+#include "web_socket_message.hpp"
 
 using namespace std;
+
+
+inline void copy_n_masked(basic_stringstream<uint8_t>& in, const uint64_t& count,
+                          basic_stringstream<uint8_t>& out, const uint8_t mask[4])
+{
+   istreambuf_iterator<uint8_t> in_iterator(in);
+   ostreambuf_iterator<uint8_t> out_iterator(out);
+   for (uint64_t i = 0; i < count; ++i) {
+      *out_iterator = mask[i % 4] ^ *in_iterator;
+      ++out_iterator;
+      ++in_iterator;
+   }
+}
 
 WebSocketSession::WebSocketSession(int socket) : _socket(socket)
 {
@@ -108,79 +122,115 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    }
 }
 
-void WebSocketSession::receive() {
-   uint8_t buf[4096];
-   basic_stringstream<uint8_t> data(_incoming_data);
-   uint8_t data_length = _incoming_data.size();
+void WebSocketSession::receive(WebSocketMessage& message) {
+   message.data = basic_stringstream<uint8_t>();
+   uint8_t message_opcode = 0x00;
 
    while (true) {
-      // Get data into buffer until we have a full message.
+      // Continue until we have a complete message.
 
-      auto received = recv(_socket, buf, sizeof(buf), 0);
-      if (received == -1) {
-         THROW_E(rig::OsError, "receive timeout");
-      }
-      data.write(buf, received);
-      data_length += received;
+      basic_stringstream<uint8_t> data(_incoming_data);
+      uint8_t data_length = _incoming_data.size();
 
-      // Try to parse header and decide what to do.
+      uint8_t header_length;
+      uint64_t payload_length;
+      uint8_t opcode;
+      uint8_t masking_key[4];
+      bool fin;
 
-      uint8_t required_header_length = 2;
-      if (data_length < required_header_length) continue; // We need at least two bytes to start.
+      do {
+         uint8_t buf[4096];
 
-      data.seekg(0);
-      uint8_t byte;
-      byte = data.get();
-      bool fin = byte & 0x80u;
-      uint8_t opcode = byte & 0x0fu;
-      byte = data.get();
-      bool mask = byte & 0x80u;
-
-      uint64_t payload_length = byte & 0x7fu;
-
-      uint8_t payload_length_length = 0;
-      if (payload_length == 126) {
-         payload_length_length = 2;
-      }
-      else if (payload_length == 127) {
-         payload_length_length = 8;
-      }
-      required_header_length += payload_length_length;
-      if (data_length < required_header_length) continue;
-
-      if (payload_length_length) {
-         payload_length = 0;
-         for (uint8_t i = 0; i < payload_length_length; ++i) {
-            payload_length <<= 8u;
-            payload_length |= data.get();
+         // Get data into buffer until we have a full data frame.
+         auto received = recv(_socket, buf, sizeof(buf), 0);
+         if (received == -1) {
+            THROW_E(rig::OsError, "receive timeout");
          }
+         data.write(buf, received);
+         data_length += received;
+
+         // Try to parse header and decide what to do.
+
+         header_length = 2;
+         if (data_length < header_length) continue; // We need at least two bytes to start.
+
+         data.seekg(0);
+         uint8_t byte;
+         byte = data.get();
+         fin = byte & 0x80u;
+         opcode = byte & 0x0fu;
+         byte = data.get();
+         bool mask = byte & 0x80u;
+
+         payload_length = byte & 0x7fu;
+
+         uint8_t payload_length_length = 0;
+         if (payload_length == 126) {
+            payload_length_length = 2;
+         } else if (payload_length == 127) {
+            payload_length_length = 8;
+         }
+         header_length += payload_length_length;
+         if (data_length < header_length) continue;
+
+         if (payload_length_length) {
+            payload_length = 0;
+            for (uint8_t i = 0; i < payload_length_length; ++i) {
+               payload_length <<= 8u;
+               payload_length |= data.get();
+            }
+         }
+
+         if (not mask) THROW(rig::OsError, "expected mask to be set by server");
+
+         header_length += 4;
+         if (data_length < header_length) continue;
+
+         for (uint8_t& item : masking_key) {
+            item = data.get();
+         }
+
+         LOG_INFO("got header, fin %d, opcode 0x%02x, payload_length %d, mask_key 0x%08x", fin, opcode, payload_length,
+                  masking_key);
+
+         // In practice we will most likely get the whole message at once, so to make the code simple re-parse the
+         // header until we have the whole data frame.
+      }
+      while (data_length < header_length + payload_length);
+
+      // Now we have a complete data fram, handle the different opcodes.
+
+      if ((opcode == 0x00) == (message_opcode == 0x00)) {
+         THROW(rig::OsError, "unexpecetd opcode, opcode 0x%x, message_opcode 0x%x", opcode, message_opcode);
+      }
+      if (message_opcode == 0x00) {
+         message_opcode = opcode;
       }
 
-      if (not mask) THROW(rig::OsError, "expected mask to be set by server");
+      if (message_opcode == 0x01 or message_opcode == 0x02) {
+         message.binary = message_opcode == 0x02;
 
-      required_header_length += 4;
-      if (data_length < required_header_length) continue;
-
-      uint32_t masking_key = 0;
-      for (uint8_t i = 0; i < 4; ++i) {
-         masking_key |= data.get();
-         masking_key <<= 8u;
+         copy_n_masked(data, payload_length, message.data, masking_key);
+      }
+      else if (message_opcode == 0x0A) {
+         basic_stringstream<uint8_t> pong_data;
+         copy_n_masked(data, payload_length, message.data, masking_key);
+         LOG_INFO("got ping, not sending pong");
+         // TODO pong(pong_data);
+      }
+      else {
+         // Ignore opcode, just skip the data.
+         data.seekg(payload_length, ios_base::cur);
       }
 
-      LOG_INFO("got header, fin %d, opcode 0x%02x, payload_length %d, mask_key 0x%08x", fin, opcode, payload_length, masking_key);
+      if (fin) {
+         // This is a complete message, save remaining data.
+         _incoming_data.assign(istreambuf_iterator<uint8_t>(data), istreambuf_iterator<uint8_t>());
+         return;
+      }
 
-      // In practice we will most likely get the whole message at once, so make it simple and wait for the whole message
-      // before parsing.
-
-      if (data_length < required_header_length + payload_length) continue;
-
+      // Keep accumulating data for full message.
    }
-
-   // Parse header.
-
-
-   // Read until we have paylaod.
-
 }
 
 void WebSocketSession::close() {

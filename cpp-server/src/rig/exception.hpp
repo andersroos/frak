@@ -65,5 +65,6 @@ namespace rig {
    };
 
    struct OsError : public BaseException {};
+   struct ValueError : public BaseException {};
 }
 
