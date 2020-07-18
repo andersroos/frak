@@ -13,6 +13,5 @@ namespace rig {
       auto last = std::find_if_not(str.rbegin(), std::make_reverse_iterator(first), ::isspace).base();
       return std::string(first, last);
    }
-
 }
 

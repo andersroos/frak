@@ -7,6 +7,15 @@
 
 struct WebSocketMessage {
 
+   WebSocketMessage() : binary(false) {}
+
+   // TODO Change data to char stringstream? How to deal with binary?
+   explicit WebSocketMessage(std::string content) : binary(false) {
+      for (char c : content) {
+         data.put((uint8_t ) c);
+      }
+   }
+
    std::basic_stringstream<uint8_t> data;
 
    bool binary;
