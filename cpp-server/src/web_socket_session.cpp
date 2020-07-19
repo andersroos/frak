@@ -147,18 +147,16 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
          // Continue until we have a complete message.
 
          stringstream data(_incoming_data);
+         data.seekp(0, ios::end);
          uint32_t data_length = _incoming_data.size();
-
-         uint32_t header_length;
-         uint64_t payload_length;
-         uint8_t opcode;
+         uint32_t header_length{};
+         uint64_t payload_length{};
+         uint8_t opcode{};
          uint8_t masking_key[4];
          bool fin;
 
          do {
             char buf[4096];
-
-            LOG_INFO("recieving data_length %d", data_length);
 
             // Get data into buffer until we have a full data frame.
             auto received = recv(_socket, buf, sizeof(buf), 0);
@@ -167,7 +165,6 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
             }
             data.write(buf, received);
             data_length += received;
-            LOG_INFO("recieved %d, data_length %d", received, data_length);
 
             // Try to parse header and decide what to do.
 
@@ -210,14 +207,12 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
                item = data.get();
             }
 
-             LOG_INFO("got header, fin %d, opcode 0x%02x, payload_length %d, mask_key 0x%08x",
-                      fin, opcode, payload_length, masking_key);
-
-            LOG_INFO("data_length %d, payload_length %d, header_length %d", data_length, payload_length, header_length);
-
             // In practice we will most likely get the whole message at once, so to make the code simple re-parse the
             // header until we have the whole data frame.
          } while (data_length < header_length + payload_length);
+
+         // LOG_INFO("complete data frame, fin %d, opcode 0x%02x, payload_length %d, header_length %d, data_length %d, mask_key 0x%08x",
+         //          fin, opcode, payload_length, header_length, data_length, masking_key);
 
          // Now we have a complete data frame, handle the different opcodes.
          if ((opcode == OPCODE_CONTINUATION) == (message_opcode == OPCODE_CONTINUATION)) {
@@ -254,7 +249,6 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
          }
 
          // Keep accumulating data for full message.
-         LOG_INFO("keep accumulating");
       }
    }
    catch (rig::OsError& e) {
