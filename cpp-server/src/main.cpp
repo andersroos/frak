@@ -1,37 +1,62 @@
 #include <memory>
-#include <thread>
-#include <chrono>
 #include "web_socket_server.hpp"
 #include "rig/exception.hpp"
 #include "rig/log.hpp"
+#include "dispatcher.hpp"
 
 using namespace std::literals;
+using namespace std;
 
-void close_it(WebSocketSession* session) {
-   std::this_thread::sleep_for(4s);
-   WebSocketMessage message("hej");
-   session->send(WebSocketMessage("hej"));
-   session->close();
-}
+/*
+thread
+  session
+    blocking-receive-without
+
+mutex
+  incoming_queue (from session, from workers)
+
+thread
+  dispatcher
+     checks_incoming_queue blocking (with timeout)
+     session send bloking
+     create threads on start
+     joins threas on abort
+
+mutex
+  block queue
+
+threads x 24
+   worker
+      posts for dispatcher on incoming_queue
+      blocking get from block queue
+      checks abort flag
+      adds start block and end block to incoming_queue
+      terminates on abort flag or if queue is empty
+ */
+
 
 int main() {
    WebSocketServer server(44002);
 
-   std::cerr << uint32_t(uint8_t(-1)) << std::endl;
+   cerr << thread::hardware_concurrency() << endl;
 
-   while (true) {
-      std::unique_ptr<WebSocketSession> session;
-      WebSocketMessage message;
+
+//   while (true) {
       try {
-         session = server.accept();
-         new std::thread(close_it, session.get());
-         while (session->receive(message)) {
-            LOG_INFO("got %s message", message.binary ? "binary" : "text");
-            LOG_INFO("message data: %s", message.data->c_str());
+         unique_ptr<WebSocketMessage> message;
+         shared_ptr<WebSocketSession> session = server.accept();
+         session->send(make_unique<WebSocketMessage>(rig::format(
+            R"({"op": "config", "endian": "little", "max_workers": %d})",
+            thread::hardware_concurrency()
+         )));
+         Dispatcher dispatcher(session);
+         while ((message = session->receive())) {
+            LOG_INFO("got message from the net of size %d", message->data->size());
+            dispatcher.on_recieve(move(message));
          }
       }
       catch (const rig::OsError& e) {
-         LOG_ERROR("connection failed: %s", e.what());
+         LOG_ERROR("session failed: %s", e.what());
       }
-   }
+//   }
 }

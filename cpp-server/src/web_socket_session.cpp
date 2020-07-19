@@ -136,8 +136,8 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
    }
 }
 
-bool WebSocketSession::receive(WebSocketMessage& message) {
-   if (_socket == -1) return false;
+unique_ptr<WebSocketMessage> WebSocketSession::receive() {
+   if (_socket == -1) return unique_ptr<WebSocketMessage>();
 
    stringstream message_data;
    uint8_t message_opcode = OPCODE_CONTINUATION;
@@ -223,20 +223,18 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
          }
 
          if (message_opcode == OPCODE_TEXT or message_opcode == OPCODE_BINARY) {
-            message.binary = message_opcode == OPCODE_BINARY;
-
             copy_n_masked(data, payload_length, message_data, masking_key);
          } else if (message_opcode == OPCODE_PING) {
             LOG_ERROR("got ping, closing connection");
             close();
-            return false;
+            return unique_ptr<WebSocketMessage>();
          } else if (message_opcode == OPCODE_CLOSE) {
             close();
-            return false;
+            return unique_ptr<WebSocketMessage>();
          } else {
             LOG_ERROR("got opcode 0x%x, closing connection", message_opcode);
             close();
-            return false;
+            return unique_ptr<WebSocketMessage>();
          }
 
          // Save remaining data for next data frame.
@@ -244,8 +242,10 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
 
          if (fin) {
             // This is a complete message return it.
-            message.data = std::make_unique<std::string>(message_data.str());
-            return true;
+            return make_unique<WebSocketMessage>(
+               make_unique<string>(message_data.str()),
+               message_opcode == OPCODE_BINARY
+            );
          }
 
          // Keep accumulating data for full message.
@@ -258,15 +258,15 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
    }
 }
 
-bool WebSocketSession::send(const WebSocketMessage &message) {
+bool WebSocketSession::send(const unique_ptr<WebSocketMessage>& message) {
    if (_socket == -1) return false;
 
-   const uint64_t length = message.data->length();
+   const uint64_t length = message->data->length();
 
    // Send header first, then payload.
 
    stringstream header;
-   header.put(0x80u | (message.binary ? OPCODE_BINARY : OPCODE_TEXT));
+   header.put(0x80u | (message->binary ? OPCODE_BINARY : OPCODE_TEXT));
    if (length < 126) {
       header.put(length & 0x7fu);
    }
@@ -292,7 +292,7 @@ bool WebSocketSession::send(const WebSocketMessage &message) {
 
    // Send payload.
 
-   auto data_pointer = message.data->c_str();
+   auto data_pointer = message->data->c_str();
    uint32_t remaining = length;
 
    while (remaining != 0) {

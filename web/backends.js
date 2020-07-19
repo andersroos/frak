@@ -116,6 +116,7 @@ class RemoteBackend {
 
     onMessage(e) {
         if (typeof e.data === "string") {
+            console.info(e.data);
             const data = JSON.parse(e.data);
             // console.info(this.key, "message", data.op, data);
             switch (data.op) {
@@ -309,6 +310,8 @@ export class Backends {
         this.handleCalculationState();
     }
 
+    // TODO Abort calculation on backend disconnect.
+    
     onBackendChange(before, after) {
         if (before !== after) {
             this.selectedBackend = this.backends[after];
