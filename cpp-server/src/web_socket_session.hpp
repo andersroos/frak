@@ -13,7 +13,7 @@ struct WebSocketSession {
    bool receive(WebSocketMessage& message);
 
    // Send websocket message. Returns false if connection was closed. Throws OsError on any other error.
-   bool send(WebSocketMessage& message);
+   bool send(const WebSocketMessage &message);
 
    // Close the connection.
    void close();
@@ -22,7 +22,7 @@ private:
    std::atomic<int> _socket;
 
    // Unhandled incoming data kept between receive calls.
-   std::basic_string<uint8_t> _incoming_data;
+   std::string _incoming_data;
 
 };
 

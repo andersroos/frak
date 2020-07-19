@@ -3,7 +3,6 @@
 #include <netinet/in.h>
 #include <unordered_map>
 #include <chrono>
-#include <algorithm>
 #include <openssl/sha.h>
 #include <b64/encode.h>
 #include "web_socket_session.hpp"
@@ -14,13 +13,13 @@
 using namespace std;
 
 
-inline void copy_n_masked(basic_stringstream<uint8_t>& in, const uint64_t& count,
-                          basic_stringstream<uint8_t>& out, const uint8_t mask[4])
+inline void copy_n_masked(stringstream& in, const uint64_t& count,
+                          stringstream& out, const uint8_t mask[4])
 {
-   istreambuf_iterator<uint8_t> in_iterator(in);
-   ostreambuf_iterator<uint8_t> out_iterator(out);
+   istreambuf_iterator<char> in_iterator(in);
+   ostreambuf_iterator<char> out_iterator(out);
    for (uint64_t i = 0; i < count; ++i) {
-      *out_iterator = mask[i % 4] ^ *in_iterator;
+      *out_iterator = mask[i % 4] ^ uint8_t(*in_iterator);
       ++out_iterator;
       ++in_iterator;
    }
@@ -31,7 +30,7 @@ const uint8_t OPCODE_TEXT = 0x01;
 const uint8_t OPCODE_BINARY = 0x02;
 const uint8_t OPCODE_CLOSE = 0x08;
 const uint8_t OPCODE_PING = 0x09;
-const uint8_t OPCODE_PONG = 0x0A;
+// const uint8_t OPCODE_PONG = 0x0A;
 
 
 WebSocketSession::WebSocketSession(int socket) : _socket(socket)
@@ -140,24 +139,26 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
 bool WebSocketSession::receive(WebSocketMessage& message) {
    if (_socket == -1) return false;
 
-   message.data = basic_stringstream<uint8_t>();
+   stringstream message_data;
    uint8_t message_opcode = OPCODE_CONTINUATION;
 
    try {
       while (true) {
          // Continue until we have a complete message.
 
-         basic_stringstream<uint8_t> data(_incoming_data);
-         uint8_t data_length = _incoming_data.size();
+         stringstream data(_incoming_data);
+         uint32_t data_length = _incoming_data.size();
 
-         uint8_t header_length;
+         uint32_t header_length;
          uint64_t payload_length;
          uint8_t opcode;
          uint8_t masking_key[4];
          bool fin;
 
          do {
-            uint8_t buf[4096];
+            char buf[4096];
+
+            LOG_INFO("recieving data_length %d", data_length);
 
             // Get data into buffer until we have a full data frame.
             auto received = recv(_socket, buf, sizeof(buf), 0);
@@ -166,6 +167,7 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
             }
             data.write(buf, received);
             data_length += received;
+            LOG_INFO("recieved %d, data_length %d", received, data_length);
 
             // Try to parse header and decide what to do.
 
@@ -195,7 +197,7 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
                payload_length = 0;
                for (uint8_t i = 0; i < payload_length_length; ++i) {
                   payload_length <<= 8u;
-                  payload_length |= data.get();
+                  payload_length |= uint8_t(data.get());
                }
             }
 
@@ -208,15 +210,16 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
                item = data.get();
             }
 
-            // LOG_INFO("got header, fin %d, opcode 0x%02x, payload_length %d, mask_key 0x%08x",
-            //          fin, opcode, payload_length, masking_key);
+             LOG_INFO("got header, fin %d, opcode 0x%02x, payload_length %d, mask_key 0x%08x",
+                      fin, opcode, payload_length, masking_key);
+
+            LOG_INFO("data_length %d, payload_length %d, header_length %d", data_length, payload_length, header_length);
 
             // In practice we will most likely get the whole message at once, so to make the code simple re-parse the
             // header until we have the whole data frame.
          } while (data_length < header_length + payload_length);
 
          // Now we have a complete data frame, handle the different opcodes.
-
          if ((opcode == OPCODE_CONTINUATION) == (message_opcode == OPCODE_CONTINUATION)) {
             THROW(rig::OsError, "unexpected opcode, opcode 0x%x, message_opcode 0x%x", opcode, message_opcode);
          }
@@ -227,7 +230,7 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
          if (message_opcode == OPCODE_TEXT or message_opcode == OPCODE_BINARY) {
             message.binary = message_opcode == OPCODE_BINARY;
 
-            copy_n_masked(data, payload_length, message.data, masking_key);
+            copy_n_masked(data, payload_length, message_data, masking_key);
          } else if (message_opcode == OPCODE_PING) {
             LOG_ERROR("got ping, closing connection");
             close();
@@ -241,13 +244,17 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
             return false;
          }
 
+         // Save remaining data for next data frame.
+         _incoming_data.assign(istreambuf_iterator<char>(data), istreambuf_iterator<char>());
+
          if (fin) {
-            // This is a complete message, save remaining data.
-            _incoming_data.assign(istreambuf_iterator<uint8_t>(data), istreambuf_iterator<uint8_t>());
+            // This is a complete message return it.
+            message.data = std::make_unique<std::string>(message_data.str());
             return true;
          }
 
          // Keep accumulating data for full message.
+         LOG_INFO("keep accumulating");
       }
    }
    catch (rig::OsError& e) {
@@ -257,11 +264,10 @@ bool WebSocketSession::receive(WebSocketMessage& message) {
    }
 }
 
-bool WebSocketSession::send(WebSocketMessage &message) {
+bool WebSocketSession::send(const WebSocketMessage &message) {
    if (_socket == -1) return false;
 
-   message.data.seekp(0, ios::end);
-   uint64_t length = message.data.tellp();
+   const uint64_t length = message.data->length();
 
    // Send header first, then payload.
 
@@ -292,10 +298,8 @@ bool WebSocketSession::send(WebSocketMessage &message) {
 
    // Send payload.
 
-   // TODO Change message to have string.
-   auto data = message.data.str();
-   auto data_pointer = data.c_str();
-   uint32_t remaining = data.size();
+   auto data_pointer = message.data->c_str();
+   uint32_t remaining = length;
 
    while (remaining != 0) {
       auto sent = ::send(_socket, data_pointer , remaining, 0);
