@@ -51,7 +51,7 @@ cpp-server-run:
 
 build: c64-build web-build java-server-build cpp-server-build
 
-run: web-run registry-run java-server-run
+run: web-run registry-run java-server-run cpp-server-run
 
 clean:
 	rm -f web/*.bc web/corelib.wasm web/corelib.js

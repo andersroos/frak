@@ -38,7 +38,6 @@ void work(atomic<bool>* abort, BlockQueue* block_queue, MessageQueue* message_qu
       for (uint32_t yi = 0; yi < block->y_size; ++yi) {
          for (uint32_t xi = 0; xi < block->x_size; ++xi) {
 
-            // TODO Check performance here.
             if (abort->load()) {
                return;
             }
