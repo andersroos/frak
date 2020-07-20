@@ -36,10 +36,8 @@ threads x 24
 
 
 int main() {
+
    WebSocketServer server(44002);
-
-   cerr << thread::hardware_concurrency() << endl;
-
 
    while (true) {
       try {
