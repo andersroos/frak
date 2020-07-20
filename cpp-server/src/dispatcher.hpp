@@ -18,7 +18,8 @@ struct Dispatcher {
       _abort(true),
       _destroy(false),
       _session(move(session)),
-      _message_queue()
+      _message_queue(),
+      _dispatcher_thread()
    {}
 
    void on_recieve(unique_ptr<WebSocketMessage> message) {
@@ -32,11 +33,9 @@ struct Dispatcher {
 
          if (not message) continue;
 
-         LOG_INFO("got message: %s", message->data->c_str());
-
          string op = message->op();
          if (op == "abort") {
-            abort();
+            abort(true);
          }
          else if (op == "start") {
             start(message);
@@ -48,8 +47,9 @@ struct Dispatcher {
             _session->send(message);
             if (_block_count-- == 1) {
                _session->send(make_unique<WebSocketMessage>(
-                  rig::format(R"({"op": "completed, "id": "%s"})", _id.c_str()))
+                  rig::format(R"({"op": "completed", "id": "%s"})", _id.c_str()))
                );
+               LOG_INFO("completed, %s", _id.c_str());
             }
          }
          else {
@@ -59,7 +59,7 @@ struct Dispatcher {
    }
 
    ~Dispatcher() {
-      abort();
+      abort(true);
       _destroy = true;
       _message_queue.put(unique_ptr<WebSocketMessage>());
       if (_dispatcher_thread) _dispatcher_thread->join();
@@ -69,7 +69,7 @@ private:
 
    // Start calculations after aborting.
    void start(const unique_ptr<WebSocketMessage>& message) {
-      abort();
+      abort(false);
       _abort = false;
       _id = message->id();
       const Json::Value* json = message->json();
@@ -94,7 +94,7 @@ private:
       }
       _block_count = _block_queue.size();
 
-      LOG_INFO("starting, workers %d, blocks %d", workers, _block_count.load());
+      LOG_INFO("starting, id %s, workers %d, blocks %d", _id.c_str(), workers, _block_count.load());
 
       for (uint32_t i = 0; i < workers; ++i) {
          _worker_threads.emplace_back(make_unique<thread>(&work, &_abort, &_block_queue, &_message_queue));
@@ -102,14 +102,15 @@ private:
    }
 
    // Abort calculations, block until done.
-   void abort() {
+   void abort(bool send) {
+      LOG_INFO("aborting, id %s", _id.c_str());
       _abort = true;
       _block_queue.clear();
       for (auto& worker : _worker_threads) {
          worker->join();
       }
       _worker_threads.clear();
-      _session->send(make_unique<WebSocketMessage>(rig::format(R"({"op": "aborted, "id": "%s"})", _id.c_str())));
+      if (send) _session->send(make_unique<WebSocketMessage>(rig::format(R"({"op": "aborted", "id": "%s"})", _id.c_str())));
    }
 
    string _id;

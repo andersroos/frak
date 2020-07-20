@@ -12,8 +12,8 @@ struct Block {
    Block(string  id,
          uint32_t x_start,
          uint32_t y_start,
-         uint32_t y_size,
          uint32_t x_size,
+         uint32_t y_size,
          int64_t x0_start_index,
          double x0_delta,
          int64_t y0_start_index,
@@ -57,7 +57,6 @@ struct BlockQueue {
       if (_queue.empty()) return unique_ptr<Block>();
       auto block = move(_queue.front());
       _queue.pop();
-      LOG_INFO("popped block queue, size %d", _queue.size());
       return block;
    }
 

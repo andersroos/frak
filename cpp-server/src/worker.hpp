@@ -8,10 +8,10 @@
 #include "block_queue.hpp"
 
 #define PUT_UINT32( BUFFER, INT ) \
-    BUFFER.put(uint8_t((INT >>  0u) & 0xffu)); \
-    BUFFER.put(uint8_t((INT >>  8u) & 0xffu)); \
-    BUFFER.put(uint8_t((INT >> 16u) & 0xffu)); \
-    BUFFER.put(uint8_t((INT >> 24u) & 0xffu));
+    BUFFER.put(char(uint8_t((INT >>  0u) & 0xffu))); \
+    BUFFER.put(char(uint8_t((INT >>  8u) & 0xffu))); \
+    BUFFER.put(char(uint8_t((INT >> 16u) & 0xffu))); \
+    BUFFER.put(char(uint8_t((INT >> 24u) & 0xffu)));
 
 
 using namespace std;
@@ -34,12 +34,12 @@ void work(atomic<bool>* abort, BlockQueue* block_queue, MessageQueue* message_qu
       PUT_UINT32(buffer, block->x_size);
       PUT_UINT32(buffer, block->y_size);
 
+      uint32_t count = 0;
       for (uint32_t yi = 0; yi < block->y_size; ++yi) {
-         for (uint32_t xi = 0; xi < block->y_size; ++xi) {
+         for (uint32_t xi = 0; xi < block->x_size; ++xi) {
 
             // TODO Check performance here.
             if (abort->load()) {
-               LOG_INFO("worker abort");
                return;
             }
 
@@ -61,9 +61,11 @@ void work(atomic<bool>* abort, BlockQueue* block_queue, MessageQueue* message_qu
             }
             uint32_t depth = (n >= block->max_n) ? 0xfffffffb : n;
             PUT_UINT32(buffer, depth);
+            ++count;
          }
       }
-      message_queue->put(make_unique<WebSocketMessage>(make_unique<string>(buffer.str()), true));
+      auto data = make_unique<string>(buffer.str());
+      message_queue->put(make_unique<WebSocketMessage>(move(data), true));
    }
 }
 

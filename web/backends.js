@@ -116,7 +116,6 @@ class RemoteBackend {
 
     onMessage(e) {
         if (typeof e.data === "string") {
-            console.info(e.data);
             const data = JSON.parse(e.data);
             // console.info(this.key, "message", data.op, data);
             switch (data.op) {
@@ -299,7 +298,7 @@ export class Backends {
     }
 
     onAborted({id}) {
-        console.info("abort", id);
+        console.info("aborted", id);
         if (id === undefined) {
             throw new Error();
         }

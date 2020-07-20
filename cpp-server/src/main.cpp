@@ -41,7 +41,7 @@ int main() {
    cerr << thread::hardware_concurrency() << endl;
 
 
-//   while (true) {
+   while (true) {
       try {
          unique_ptr<WebSocketMessage> message;
          shared_ptr<WebSocketSession> session = server.accept();
@@ -51,12 +51,11 @@ int main() {
          )));
          Dispatcher dispatcher(session);
          while ((message = session->receive())) {
-            LOG_INFO("got message from the net of size %d", message->data->size());
             dispatcher.on_recieve(move(message));
          }
       }
       catch (const rig::OsError& e) {
          LOG_ERROR("session failed: %s", e.what());
       }
-//   }
+   }
 }

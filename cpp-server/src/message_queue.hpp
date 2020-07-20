@@ -11,7 +11,6 @@ struct MessageQueue {
 
    // Put a message into the queue.
    void put(unique_ptr<WebSocketMessage> message) {
-      LOG_INFO("putting: %s", message->data->c_str());
       scoped_lock lock(_mutex);
       _queue.emplace(move(message));
       _condition.notify_one();
@@ -22,7 +21,6 @@ struct MessageQueue {
       unique_lock lock(_mutex);
       while (_queue.empty()) _condition.wait(lock);
       auto message = move(_queue.front());
-      LOG_INFO("popping (size %d): %s", _queue.size(), message->data->c_str());
       _queue.pop();
       return message;
    }
