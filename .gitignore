@@ -33,3 +33,7 @@ cpp-server/CMakeCache.txt
 cpp-server/cmake_install.cmake
 cpp-server/cpp-server
 *.gch
+
+# go
+go-server/bin
+go-server/pkg

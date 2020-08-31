@@ -49,9 +49,15 @@ cpp-server-build:
 cpp-server-run:
 	./cpp-server/cmake-build-release/cpp-server
 
-build: c64-build web-build java-server-build cpp-server-build
+go-server-build:
+	cd go-server && go install ygram.se/frak
 
-run: web-run registry-run java-server-run cpp-server-run
+go-server-run:
+	./go-server/bin/frak
+
+build: c64-build web-build java-server-build cpp-server-build go-server-build
+
+run: web-run registry-run java-server-run cpp-server-run go-server-run
 
 clean:
 	rm -f web/*.bc web/corelib.wasm web/corelib.js
