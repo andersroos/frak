@@ -50,17 +50,17 @@ cpp-server-run:
 	./cpp-server/cmake-build-release/cpp-server
 
 go-server-build:
-	cd go-server && go install ygram.se/frak
+	cd go-server && go test && go build -o go-server
 
 go-server-run:
-	./go-server/bin/frak
+	./go-server/go-server
 
 build: c64-build web-build java-server-build cpp-server-build go-server-build
 
 run: web-run registry-run java-server-run cpp-server-run go-server-run
 
 clean:
-	rm -f web/*.bc web/corelib.wasm web/corelib.js
+	rm -f web/*.bc web/corelib.wasm web/corelib.js go-server/go-server cpp-server/cpp-server
 
 git-clean:
 	git clean -n -fdx -e .idea

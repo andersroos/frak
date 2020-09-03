@@ -35,5 +35,5 @@ cpp-server/cpp-server
 *.gch
 
 # go
-go-server/bin
 go-server/pkg
+go-server/go-server
