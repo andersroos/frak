@@ -12,7 +12,8 @@ struct WebSocketSession {
    // always be called in the same thread. Send and close can be called from any thread. Throws OsError on any error.
    std::unique_ptr<WebSocketMessage> receive();
 
-   // Send websocket message. Returns false if connection was closed. Throws OsError on any other error.
+   // Send websocket message. Returns false if connection was closed. Throws OsError on any other error. Can be called
+   // by any thread but is not thread safe.
    bool send(const std::unique_ptr<WebSocketMessage>& message);
 
    // Close the connection.

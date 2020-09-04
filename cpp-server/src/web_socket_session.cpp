@@ -57,7 +57,7 @@ WebSocketSession::WebSocketSession(int socket) : _socket(socket)
       stringstream request;
       while (true) {
          auto received = recv(_socket, buf, sizeof(buf), 0);
-         if (received == -1) THROW(rig::OsError, "field to receive from socket in handshake");
+         if (received == -1) THROW(rig::OsError, "failed to receive from socket in handshake");
          request.write(buf, received);
          request.seekg(-4, stringstream::end);
          request.read(buf, 4);
@@ -198,7 +198,7 @@ unique_ptr<WebSocketMessage> WebSocketSession::receive() {
                }
             }
 
-            if (not mask) THROW(rig::OsError, "expected mask to be set by server");
+            if (not mask) THROW(rig::OsError, "expected mask to be set by client");
 
             header_length += 4;
             if (data_length < header_length) continue;

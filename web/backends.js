@@ -180,6 +180,7 @@ export class Backends {
             new LocalBackend(store, this, browser + "*js"),
             new RemoteBackend(store, this, "java", "ws://frak.ygram.se:44001/"),
             new RemoteBackend(store, this, "cpp", "ws://frak.ygram.se:44002/"),
+            new RemoteBackend(store, this, "go", "ws://frak.ygram.se:44003/"),
         ].map(backend => [backend.key, backend]));
 
         this.store.state = CALCULATION_WAITING_STARTUP;
