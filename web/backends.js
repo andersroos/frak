@@ -248,6 +248,7 @@ export class Backends {
         this.currenctCalculation.x_size = X_SIZE;
         this.currenctCalculation.y_size = Y_SIZE;
         this.currenctCalculation.block_x_size = X_SIZE;
+        // this.currenctCalculation.block_y_size = Y_SIZE;
         this.currenctCalculation.block_y_size = 1;
         // this.currenctCalculation.block_y_size = Y_SIZE / 8;
         const {x0_delta, y0_delta, x0_start_index, y0_start_index} = this.currenctCalculation;

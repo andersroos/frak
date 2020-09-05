@@ -161,8 +161,12 @@ func (d *Dispatcher) Start(message *IncomingMessage) {
 	go func() {
 		d.working.Wait()
 		if atomic.LoadUint32(&completed) == count {
+			data, _ := json.Marshal(map[string]interface{}{
+				"op": COMPLETED,
+				"id": message.Id,
+			})
+			d.outgoing <- OutgoingMessage{websocket.TextMessage, data}
 			logger.Infof("completed %s", message.Id)
-			// TODO Send completed.
 		}
 	}()
 }
