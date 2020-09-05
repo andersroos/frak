@@ -1,8 +1,8 @@
 package main
 
 import (
-	"net/http"
 	"github.com/gorilla/websocket"
+	"net/http"
 	"ygram.se/frak/logging"
 )
 
@@ -11,9 +11,9 @@ var logger = logging.Logger
 var connecting = make(chan *websocket.Conn)
 
 var upgrader = websocket.Upgrader{
-    ReadBufferSize:  4096,
-    WriteBufferSize: 4096,
-    CheckOrigin: func(*http.Request) bool { return true},
+	ReadBufferSize:  4096,
+	WriteBufferSize: 4096,
+	CheckOrigin:     func(*http.Request) bool { return true },
 }
 
 func handler(writer http.ResponseWriter, request *http.Request) {

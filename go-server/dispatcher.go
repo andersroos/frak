@@ -91,7 +91,9 @@ func (d *Dispatcher) Run() {
 			var message IncomingMessage
 			err := d.conn.ReadJSON(&message)
 			if err != nil {
-				logger.Errorf("got error when reading: %v", err)
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+					logger.Errorf("got error when reading: %v", err)
+				}
 				return
 			}
 
@@ -114,7 +116,9 @@ func (d *Dispatcher) Run() {
 		for message := range d.outgoing {
 			err := d.conn.WriteMessage(message.messageType, message.data)
 			if err != nil {
-				logger.Errorf("got error when writing: %v", err)
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+					logger.Errorf("got error when writing: %v", err)
+				}
 				return
 			}
 		}
