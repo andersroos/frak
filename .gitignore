@@ -37,3 +37,4 @@ cpp-server/cpp-server
 # go
 go-server/pkg
 go-server/go-server
+go-server/frak
